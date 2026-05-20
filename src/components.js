@@ -5,13 +5,18 @@ import { calcPts } from './data';
 
 export function SriDadsLogo({ size = 40 }) {
   return (
-    <img
-      src="/logo.png"
-      alt="GEMS SRI Football Dad's Club"
-      width={size}
-      height={size}
-      style={{ objectFit:"contain", flexShrink:0, mixBlendMode:"screen" }}
-    />
+    <div style={{
+      width:size, height:size, flexShrink:0, borderRadius:size*0.12,
+      overflow:"hidden", background:"#012148"
+    }}>
+      <img
+        src="/logo.png"
+        alt="GEMS SRI Football Dad's Club"
+        width={size}
+        height={size}
+        style={{ objectFit:"cover", display:"block" }}
+      />
+    </div>
   );
 }
 
