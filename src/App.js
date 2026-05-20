@@ -525,6 +525,8 @@ export default function App() {
   const [activeStage, setActiveStage] = useState("group");
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [toast, setToast] = useState(null);
+  // Secret admin access via URL hash: sridads.com/#admin
+  const isAdminUrl = window.location.hash === "#admin";
 
   useEffect(() => {
     (async () => {
@@ -608,9 +610,9 @@ export default function App() {
     { id:"predict", icon:"✏️", label:"Predict" },
     { id:"leaderboard", icon:"🏆", label:"Standings" },
     { id:"rules", icon:"📋", label:"Rules" },
-    { id:"results", icon:"📝", label:"Scores" },
-    { id:"admin", icon:"⚙️", label:"Admin" },
-  ];
+    { id:"results", icon:"📝", label:"Scores", hidden: !isAdminUrl },
+    { id:"admin", icon:"⚙️", label:"Admin", hidden: !isAdminUrl },
+  ].filter(n => !n.hidden);
 
   const sp = { shared, persist, me, setView, showToast };
 
