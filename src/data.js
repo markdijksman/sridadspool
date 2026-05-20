@@ -33,7 +33,7 @@ export const FLAGS = {
   "TBD":"🏳️",
 };
 
-export const ALL_TEAMS = Object.values(GROUPS_2026).flat();
+export const ALL_TEAMS = Object.values(GROUPS_2026).flat().sort((a, b) => a.localeCompare(b));
 
 // Dubai time = UTC+4. All times converted from ET (UTC-4 in summer) → Dubai (UTC+4) = ET + 8 hours
 // "3pm ET" = 23:00 Dubai | "6pm ET" = 02:00+1 Dubai | "9pm ET" = 05:00+1 Dubai | "10pm ET" = 06:00+1 Dubai
@@ -180,13 +180,29 @@ export const INITIAL_POOL = {
   champions: {},
 };
 
-export function calcPts(pred, actual) {
+// Round multipliers for knockout stages
+export const ROUND_MULTIPLIER = {
+  "group": 1,
+  "Round of 32": 2,
+  "Round of 16": 3,
+  "Quarter-final": 4,
+  "Semi-final": 5,
+  "Bronze Final": 6,
+  "Final": 8,
+};
+
+export function calcPts(pred, actual, stage = "group") {
   if (!pred || !actual) return 0;
   const ph = parseInt(pred.homeGoals), pa = parseInt(pred.awayGoals);
   const ah = parseInt(actual.homeGoals), aa = parseInt(actual.awayGoals);
   if (isNaN(ph) || isNaN(pa)) return 0;
-  if (ph === ah && pa === aa) return 3;
+  const mult = ROUND_MULTIPLIER[stage] || 1;
+  if (ph === ah && pa === aa) return 3 * mult;
   const outcome = (h, a) => h > a ? "home" : a > h ? "away" : "draw";
-  if (outcome(ph, pa) === outcome(ah, aa)) return 1;
+  if (outcome(ph, pa) === outcome(ah, aa)) return 1 * mult;
   return 0;
 }
+
+// Champion bonus points
+export const CHAMPION_BONUS = 15;
+export const RUNNER_UP_BONUS = 5;
