@@ -16,7 +16,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
         <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}>
           <SriDadsLogo size={110} />
         </div>
-        <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:30, lineHeight:1.1, marginBottom:6, color:"#fff" }}>{shared.poolName}</h1>
+        <h1 style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:44, lineHeight:1, marginBottom:6, color:"#fff", letterSpacing:"2px" }}>{shared.poolName}</h1>
         <p style={{ color:"var(--gold)", fontSize:13, fontWeight:600 }}>FIFA World Cup 2026 · USA / Canada / Mexico</p>
         <p style={{ color:"var(--muted)", fontSize:11, marginTop:4 }}>A friendly prediction game for the SRI Dads community</p>
       </div>
@@ -46,7 +46,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
         </div>
         <div className="card" style={{ padding:16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:"var(--gold)" }}>🏆 Standings</span>
+            <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:18, color:"var(--gold)" }}>🏆 Standings</span>
             <button className="btn btn-ghost btn-sm" onClick={() => setView("leaderboard")}>Full table →</button>
           </div>
           {leaderboard.length === 0
@@ -55,7 +55,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
               <div key={p.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                 <span style={{ fontSize:20, minWidth:28 }}>{["🥇","🥈","🥉"][i]}</span>
                 <span style={{ flex:1, fontWeight:600 }}>{p.name}</span>
-                <span style={{ fontFamily:"'Playfair Display',serif", fontSize:28, color:"var(--gold)", lineHeight:1 }}>{p.pts}</span>
+                <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:28, color:"var(--gold)", lineHeight:1 }}>{p.pts}</span>
                 <span style={{ color:"var(--muted)", fontSize:12 }}>pts</span>
               </div>
             ))
@@ -63,7 +63,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
         </div>
         <div className="card" style={{ padding:16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:"var(--gold)" }}>📋 Scoring</span>
+            <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:18, color:"var(--gold)" }}>📋 Scoring</span>
             <button className="btn btn-ghost btn-sm" onClick={() => setView("rules")}>Full rules →</button>
           </div>
           {[["⭐ Exact score","3 pts"],["✅ Correct outcome","1 pt"],["❌ Wrong","0 pts"]].map(([l, v]) => (
@@ -114,25 +114,23 @@ function JoinView({ shared, persist, loginAs, setView }) {
         <button className="btn btn-ghost btn-sm" style={{ marginBottom:20 }} onClick={() => mode === "choose" ? setView("home") : setMode("choose")}>← Back</button>
         {mode === "choose" && (
           <div>
-            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:4, color:"#fff" }}>Welcome, Dad! 👋</h2>
+            <h2 style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, marginBottom:4, color:"#fff" }}>Welcome, Dad! 👋</h2>
             <p style={{ color:"var(--muted)", fontSize:13, marginBottom:28 }}>First time, or returning?</p>
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
               <button className="btn btn-gold" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }} onClick={() => setMode("register")}>
                 <span style={{ fontSize:22 }}>🆕</span>
                 <div><div>I'm new — sign me up</div><div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Create your account</div></div>
               </button>
-              {shared.participants.length > 0 && (
-                <button className="btn btn-ghost" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }} onClick={() => setMode("login")}>
-                  <span style={{ fontSize:22 }}>🔑</span>
-                  <div><div>I'm already signed up</div><div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Log back in</div></div>
-                </button>
-              )}
+              <button className="btn btn-ghost" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }} onClick={() => setMode("login")}>
+                <span style={{ fontSize:22 }}>🔑</span>
+                <div><div>I'm already signed up</div><div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Log back in</div></div>
+              </button>
             </div>
           </div>
         )}
         {mode === "register" && (
           <div>
-            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:4, color:"#fff" }}>Sign Up</h2>
+            <h2 style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, marginBottom:4, color:"#fff" }}>Sign Up</h2>
             <p style={{ color:"var(--muted)", fontSize:13, marginBottom:24 }}>Choose a name and a 4-digit PIN.</p>
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
               <div><p className="lbl" style={{ marginBottom:6 }}>Your name</p><input className="inp" placeholder="e.g. Thomas" value={name} onChange={e => setName(e.target.value)} /></div>
@@ -145,7 +143,7 @@ function JoinView({ shared, persist, loginAs, setView }) {
         )}
         {mode === "login" && (
           <div>
-            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:4, color:"#fff" }}>Log In</h2>
+            <h2 style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, marginBottom:4, color:"#fff" }}>Log In</h2>
             <p style={{ color:"var(--muted)", fontSize:13, marginBottom:20 }}>Select your name and enter your PIN.</p>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
               {shared.participants.map(p => (
@@ -196,7 +194,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
       <div style={{ padding:"16px 16px 0" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
-            <p style={{ fontFamily:"'Playfair Display',serif", fontSize:20, color:"var(--gold)" }}>✏️ My Predictions</p>
+            <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"var(--gold)" }}>✏️ My Predictions</p>
             <p style={{ color:"var(--muted)", fontSize:12 }}>{me.name} · {filled} saved</p>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={logout}>Log out</button>
@@ -279,7 +277,7 @@ function LeaderboardView({ leaderboard, shared }) {
   return (
     <div>
       <div style={{ padding:"20px 16px" }}>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:20, color:"var(--gold)" }}>🏆 Leaderboard</p>
+        <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, marginBottom:20, color:"var(--gold)" }}>🏆 Leaderboard</p>
         {leaderboard.length === 0
           ? <div style={{ textAlign:"center", padding:48, color:"var(--muted)" }}><p style={{ fontSize:40, marginBottom:10 }}>👥</p><p>No participants yet</p></div>
           : <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -287,7 +285,7 @@ function LeaderboardView({ leaderboard, shared }) {
                 <div key={p.id} className={`card ${i===0?"lb1":i===1?"lb2":i===2?"lb3":""}`} style={{ padding:"16px 18px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <span style={{ fontSize:22, minWidth:30, textAlign:"center" }}>
-                      {i < 3 ? ["🥇","🥈","🥉"][i] : <span style={{ fontFamily:"'Playfair Display',serif", color:"var(--muted)", fontSize:18 }}>#{i+1}</span>}
+                      {i < 3 ? ["🥇","🥈","🥉"][i] : <span style={{ fontFamily:"'Bebas Neue', sans-serif", color:"var(--muted)", fontSize:18 }}>#{i+1}</span>}
                     </span>
                     <div style={{ flex:1 }}>
                       <p style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>{p.name}</p>
@@ -295,7 +293,7 @@ function LeaderboardView({ leaderboard, shared }) {
                       {shared.champions[p.id] && <p style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>🏆 Pick: {FLAGS[shared.champions[p.id]]} {shared.champions[p.id]}</p>}
                     </div>
                     <div style={{ textAlign:"right" }}>
-                      <span style={{ fontFamily:"'Playfair Display',serif", fontSize:32, color: i===0 ? "var(--gold)" : "var(--text)", lineHeight:1 }}>{p.pts}</span>
+                      <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:32, color: i===0 ? "var(--gold)" : "var(--text)", lineHeight:1 }}>{p.pts}</span>
                       <span style={{ fontSize:11, color:"var(--muted)", marginLeft:3 }}>pts</span>
                     </div>
                   </div>
@@ -393,7 +391,7 @@ function ScheduleView({ shared }) {
   return (
     <div>
       <div style={{ padding:"16px 16px 0" }}>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontSize:24, marginBottom:4, color:"var(--gold)" }}>📅 Full Schedule</p>
+        <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, marginBottom:4, color:"var(--gold)" }}>📅 Full Schedule</p>
         <p style={{ color:"var(--muted)", fontSize:12, marginBottom:14 }}>All times in Dubai time (GST, UTC+4)</p>
 
         {/* Stage toggle */}
@@ -561,7 +559,7 @@ function RulesView() {
       <div style={{ padding:"20px 16px" }}>
         <div className="card-gold" style={{ padding:"20px 18px", marginBottom:20, textAlign:"center" }}>
           <p style={{ fontSize:36, marginBottom:6 }}>📋</p>
-          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:24, color:"#fff", marginBottom:4 }}>Pool Rules</h2>
+          <h2 style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, color:"#fff", marginBottom:4 }}>Pool Rules</h2>
           <p style={{ color:"var(--gold)", fontSize:11, fontWeight:600, letterSpacing:"1px", textTransform:"uppercase" }}>SRI Dads · World Cup 2026</p>
         </div>
         <div className="card" style={{ padding:16, marginBottom:16 }}>
@@ -571,7 +569,7 @@ function RulesView() {
               <div key={lb} style={{ background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"12px 8px", border:"1px solid var(--bd)" }}>
                 <div style={{ fontSize:22, marginBottom:4 }}>{ic}</div>
                 <div style={{ fontSize:11, color:"var(--muted)", marginBottom:6, whiteSpace:"pre-line", lineHeight:1.3 }}>{lb}</div>
-                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, color:col, fontWeight:700 }}>{pts}</div>
+                <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:col, fontWeight:700 }}>{pts}</div>
               </div>
             ))}
           </div>
@@ -608,7 +606,7 @@ function ResultsView({ shared, persist, activeGroup, setActiveGroup, activeStage
   return (
     <div>
       <div style={{ padding:"16px 16px" }}>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontSize:24, marginBottom:16, color:"var(--gold)" }}>📝 Enter Results</p>
+        <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, marginBottom:16, color:"var(--gold)" }}>📝 Enter Results</p>
         <div style={{ display:"flex", gap:8, marginBottom:14 }}>
           {[["group","Group Stage"],["knockout","Knockout"]].map(([s, l]) => (
             <button key={s} className={`tab ${activeStage === s ? "on" : "off"}`} onClick={() => setActiveStage(s)}>{l}</button>
@@ -651,7 +649,7 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
   return (
     <div>
       <div style={{ padding:"16px 16px" }}>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontSize:24, marginBottom:20, color:"var(--gold)" }}>⚙️ Admin Panel</p>
+        <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, marginBottom:20, color:"var(--gold)" }}>⚙️ Admin Panel</p>
         <div style={{ marginBottom:14 }}>
           <p className="lbl" style={{ marginBottom:8 }}>Pool name</p>
           <div className="card" style={{ padding:14 }}>
