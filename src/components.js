@@ -14,7 +14,7 @@ export function Wordmark() {
       }} />
       <div style={{ lineHeight:1.1 }}>
         <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:13, color:"#C9A84C", letterSpacing:"0.8px" }}>SRI DADS</p>
-        <p style={{ fontSize:8, color:"rgba(201,168,76,0.55)", letterSpacing:"1px", textTransform:"uppercase" }}>For Glory and Bragging Rights</p>
+        <p style={{ fontSize:8, color:"rgba(201,168,76,0.55)", letterSpacing:"1px", textTransform:"uppercase" }}>Brotherhood beyond the school gates</p>
       </div>
     </div>
   );
@@ -96,27 +96,42 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
   const filled = pred.homeGoals !== undefined && pred.awayGoals !== undefined;
   const pts = match.result ? calcPts(pred, match.result) : null;
   const locked = !!match.result;
+  const isKnockout = !match.group;
   return (
-    <div className={`mrow ${locked ? "played" : ""}`}>
-      <div style={{ flex:1, textAlign:"right" }}><TeamBadge team={match.home} right /></div>
-      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-        <input type="number" min="0" max="20"
-          className={`sbox ${filled ? "filled" : ""}`}
-          value={pred.homeGoals ?? ""}
-          disabled={locked || match.home === "TBD"}
-          onChange={e => onUpdate && onUpdate(match.id, e.target.value, pred.awayGoals ?? "")} />
-        <span style={{ color:"var(--muted)", fontWeight:700, fontSize:14 }}>–</span>
-        <input type="number" min="0" max="20"
-          className={`sbox ${filled ? "filled" : ""}`}
-          value={pred.awayGoals ?? ""}
-          disabled={locked || match.away === "TBD"}
-          onChange={e => onUpdate && onUpdate(match.id, pred.homeGoals ?? "", e.target.value)} />
-      </div>
-      <div style={{ flex:1 }}><TeamBadge team={match.away} /></div>
-      {pts !== null && <Pts pts={pts} />}
-      {showResult && match.result && (
-        <span style={{ color:"var(--muted)", fontSize:11 }}>{match.result.homeGoals}–{match.result.awayGoals}</span>
+    <div style={{ marginBottom:2 }}>
+      {/* Date / time / venue */}
+      {(match.date || match.label) && (
+        <div style={{ display:"flex", justifyContent:"space-between", padding:"2px 4px 4px", fontSize:10, color:"var(--muted)" }}>
+          <span>{match.label || match.date}</span>
+          {match.time && <span>🕐 {match.time} Dubai</span>}
+          {match.venue && <span style={{ fontSize:9, opacity:.7 }}>{match.venue}</span>}
+        </div>
       )}
+      <div className={`mrow ${locked ? "played" : ""}`}>
+        <div style={{ flex:1, textAlign:"right" }}>
+          <TeamBadge team={isKnockout && !FLAGS[match.home] ? "TBD" : match.home} right />
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+          <input type="number" min="0" max="20"
+            className={`sbox ${filled ? "filled" : ""}`}
+            value={pred.homeGoals ?? ""}
+            disabled={locked || match.home === "TBD" || (isKnockout && !FLAGS[match.home])}
+            onChange={e => onUpdate && onUpdate(match.id, e.target.value, pred.awayGoals ?? "")} />
+          <span style={{ color:"var(--muted)", fontWeight:700, fontSize:14 }}>–</span>
+          <input type="number" min="0" max="20"
+            className={`sbox ${filled ? "filled" : ""}`}
+            value={pred.awayGoals ?? ""}
+            disabled={locked || match.away === "TBD" || (isKnockout && !FLAGS[match.away])}
+            onChange={e => onUpdate && onUpdate(match.id, pred.homeGoals ?? "", e.target.value)} />
+        </div>
+        <div style={{ flex:1 }}>
+          <TeamBadge team={isKnockout && !FLAGS[match.away] ? "TBD" : match.away} />
+        </div>
+        {pts !== null && <Pts pts={pts} />}
+        {showResult && match.result && (
+          <span style={{ color:"var(--muted)", fontSize:11 }}>{match.result.homeGoals}–{match.result.awayGoals}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -125,18 +140,27 @@ export function AdminMatchRow({ match, onSave }) {
   const [hg, setHg] = useState(match.result?.homeGoals ?? "");
   const [ag, setAg] = useState(match.result?.awayGoals ?? "");
   return (
-    <div className={`mrow ${match.result ? "played" : ""}`}>
-      <div style={{ flex:1, textAlign:"right" }}><TeamBadge team={match.home} right /></div>
-      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-        <input type="number" min="0" max="20" className={`sbox ${match.result ? "filled" : ""}`}
-          value={hg} onChange={e => setHg(e.target.value)} />
-        <span style={{ color:"var(--muted)", fontWeight:700 }}>–</span>
-        <input type="number" min="0" max="20" className={`sbox ${match.result ? "filled" : ""}`}
-          value={ag} onChange={e => setAg(e.target.value)} />
+    <div style={{ marginBottom:2 }}>
+      {(match.date || match.label) && (
+        <div style={{ display:"flex", justifyContent:"space-between", padding:"2px 4px 4px", fontSize:10, color:"var(--muted)" }}>
+          <span>{match.label || match.date}</span>
+          {match.time && <span>🕐 {match.time} Dubai</span>}
+          {match.venue && <span style={{ fontSize:9, opacity:.7 }}>{match.venue}</span>}
+        </div>
+      )}
+      <div className={`mrow ${match.result ? "played" : ""}`}>
+        <div style={{ flex:1, textAlign:"right" }}><TeamBadge team={match.home} right /></div>
+        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+          <input type="number" min="0" max="20" className={`sbox ${match.result ? "filled" : ""}`}
+            value={hg} onChange={e => setHg(e.target.value)} />
+          <span style={{ color:"var(--muted)", fontWeight:700 }}>–</span>
+          <input type="number" min="0" max="20" className={`sbox ${match.result ? "filled" : ""}`}
+            value={ag} onChange={e => setAg(e.target.value)} />
+        </div>
+        <div style={{ flex:1 }}><TeamBadge team={match.away} /></div>
+        <button className="btn btn-gold btn-sm" style={{ flexShrink:0 }}
+          onClick={() => { if (hg !== "" && ag !== "") onSave(hg, ag); }}>✓</button>
       </div>
-      <div style={{ flex:1 }}><TeamBadge team={match.away} /></div>
-      <button className="btn btn-gold btn-sm" style={{ flexShrink:0 }}
-        onClick={() => { if (hg !== "" && ag !== "") onSave(hg, ag); }}>✓</button>
     </div>
   );
 }
