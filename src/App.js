@@ -415,6 +415,27 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
             <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
               {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={isPredictionLocked() ? null : updatePred} showResult />)}
             </div>
+
+            {/* Next / Prev group navigation */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:16, marginBottom:8 }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={groupKeys.indexOf(activeGroup) === 0}
+                onClick={() => setActiveGroup(groupKeys[groupKeys.indexOf(activeGroup) - 1])}
+                style={{ opacity: groupKeys.indexOf(activeGroup) === 0 ? 0.3 : 1 }}>
+                ← Group {groupKeys[groupKeys.indexOf(activeGroup) - 1] || ""}
+              </button>
+              <span style={{ fontSize:10, color:"var(--muted)" }}>
+                {groupKeys.indexOf(activeGroup) + 1} / {groupKeys.length}
+              </span>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={groupKeys.indexOf(activeGroup) === groupKeys.length - 1}
+                onClick={() => setActiveGroup(groupKeys[groupKeys.indexOf(activeGroup) + 1])}
+                style={{ opacity: groupKeys.indexOf(activeGroup) === groupKeys.length - 1 ? 0.3 : 1 }}>
+                Group {groupKeys[groupKeys.indexOf(activeGroup) + 1] || ""} →
+              </button>
+            </div>
           </div>
         )}
         {activeStage === "knockout" && (
