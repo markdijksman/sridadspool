@@ -14,7 +14,7 @@ export function Wordmark() {
       }} />
       <div style={{ lineHeight:1.1 }}>
         <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:13, color:"#C9A84C", letterSpacing:"0.8px" }}>SRI DADS</p>
-        <p style={{ fontSize:8, color:"rgba(201,168,76,0.55)", letterSpacing:"1.8px", textTransform:"uppercase" }}>Dubai Sports City</p>
+        <p style={{ fontSize:8, color:"rgba(201,168,76,0.55)", letterSpacing:"1px", textTransform:"uppercase" }}>For Glory and Bragging Rights</p>
       </div>
     </div>
   );
@@ -82,7 +82,7 @@ export function PageFooter() {
       <LegalBox />
       <div style={{ marginTop:16, borderTop:"1px solid var(--bd)", paddingTop:14, textAlign:"center" }}>
         <p style={{ fontSize:11, color:"var(--muted)", lineHeight:1.8 }}>
-          © 2026 SRI Dads · Dubai Sports City, UAE<br />
+          © 2026 SRI Dads · For Glory and Bragging Rights<br />
           All rights reserved. Made with ⚽ by the SRI parent community.<br />
           <span style={{ fontSize:10, opacity:.6 }}>Not affiliated with GEMS Education or GEMS School of Research &amp; Innovation.</span>
         </p>
