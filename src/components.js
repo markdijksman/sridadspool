@@ -10,7 +10,7 @@ export function SriDadsLogo({ size = 40 }) {
       alt="GEMS SRI Football Dad's Club"
       width={size}
       height={size}
-      style={{ objectFit:"contain", flexShrink:0 }}
+      style={{ objectFit:"contain", flexShrink:0, mixBlendMode:"screen" }}
     />
   );
 }
@@ -20,8 +20,8 @@ export function Wordmark() {
     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
       <SriDadsLogo size={38} />
       <div style={{ lineHeight:1.1 }}>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:13, color:"#C9A84C", letterSpacing:"0.8px" }}>SRI DADS</p>
-        <p style={{ fontSize:8, color:"rgba(201,168,76,0.55)", letterSpacing:"0.8px", textTransform:"uppercase" }}>Brotherhood beyond the school gates</p>
+        <p style={{ fontFamily:"'Oswald', sans-serif", fontWeight:700, fontSize:14, color:"#C9A84C", letterSpacing:"2px", textTransform:"uppercase" }}>SRI Dads</p>
+        <p style={{ fontSize:8, color:"rgba(201,168,76,0.55)", letterSpacing:"0.8px", textTransform:"uppercase", fontFamily:"Inter,sans-serif" }}>Brotherhood beyond the school gates</p>
       </div>
     </div>
   );
@@ -37,7 +37,7 @@ export function TopBar({ saving, syncStatus, lastSync }) {
     <div className="topbar">
       <Wordmark />
       <div style={{ textAlign:"right", lineHeight:1.2 }}>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:12, color:"var(--text)" }}>World Cup Pool 2026</p>
+        <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontWeight:400, fontSize:15, color:"var(--text)", letterSpacing:"1px" }}>World Cup Pool 2026</p>
         {saving && <p style={{ fontSize:9, color:"var(--muted)" }}>Saving <span className="spin">⚽</span></p>}
         {syncLabel && !saving && (
           <p style={{ fontSize:9, color: syncStatus === 'error' ? "var(--danger)" : syncStatus === 'ok' ? "var(--ok)" : "var(--muted)" }}>
@@ -200,7 +200,7 @@ export function PinGate({ onUnlock, adminPin }) {
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"60px 24px", gap:18 }}>
       <div style={{ width:60, height:60, borderRadius:"50%", background:"var(--gold-pale)",
         border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>🔐</div>
-      <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:"var(--text)" }}>Admin Access</p>
+      <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontWeight:700, fontSize:20, color:"var(--text)" }}>Admin Access</p>
       <input type="password" inputMode="numeric" className="pin-inp" maxLength={4}
         value={pin} placeholder="••••"
         onChange={e => { setPin(e.target.value.replace(/\D/g, "")); setErr(false); }}
