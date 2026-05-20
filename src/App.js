@@ -6,13 +6,50 @@ import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox, SriDadsLogo
 } from './components';
 import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval } from './scoreSync';
+import { getEligibleTeams, getCountdown, isPredictionLocked, FIRST_MATCH_UTC, inferKnockoutBracket } from './knockout';
+
+// ─── COUNTDOWN WIDGET ────────────────────────────────────────────────────────
+
+function Countdown() {
+  const [cd, setCd] = useState(getCountdown());
+  useEffect(() => {
+    const t = setInterval(() => setCd(getCountdown()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  if (!cd) return (
+    <div style={{ background:"rgba(224,85,85,0.12)", border:"1px solid rgba(224,85,85,0.3)", borderRadius:12, padding:"12px 16px", textAlign:"center" }}>
+      <p style={{ fontSize:13, fontWeight:700, color:"#E05555" }}>🔒 Predictions are now locked — the tournament has started!</p>
+    </div>
+  );
+
+  const { days, hours, minutes, seconds } = cd;
+  const urgency = cd.diff < 24*60*60*1000; // less than 24h
+
+  return (
+    <div style={{ background: urgency ? "rgba(224,85,85,0.1)" : "var(--gold-pale)", border:`1px solid ${urgency ? "rgba(224,85,85,0.3)" : "var(--gold-bd)"}`, borderRadius:12, padding:"14px 16px" }}>
+      <p style={{ fontSize:11, fontWeight:700, color: urgency ? "#E05555" : "var(--gold)", marginBottom:10, letterSpacing:"1px", textTransform:"uppercase" }}>
+        ⏱ {urgency ? "⚠️ Less than 24h left!" : "Predictions close at kickoff"}
+      </p>
+      <p style={{ fontSize:10, color:"var(--muted)", marginBottom:10 }}>Mexico vs South Africa · Thu 11 Jun · 23:00 Dubai</p>
+      <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+        {[["days",days],["hrs",hours],["min",minutes],["sec",seconds]].map(([l,v]) => (
+          <div key={l} style={{ textAlign:"center", background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"8px 10px", minWidth:52 }}>
+            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:28, color: urgency ? "#E05555" : "var(--gold)", lineHeight:1 }}>{String(v).padStart(2,"0")}</div>
+            <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{l}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
 
 function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, setView }) {
   return (
     <div>
-      <div style={{ background:"linear-gradient(180deg,rgba(201,168,76,0.07) 0%,transparent 100%)", padding:"28px 20px 22px", textAlign:"center", borderBottom:"1px solid var(--bd)" }}>
+      <div style={{ background:"linear-gradient(180deg,rgba(232,184,75,0.07) 0%,transparent 100%)", padding:"28px 20px 22px", textAlign:"center", borderBottom:"1px solid var(--bd)" }}>
         <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}>
           <SriDadsLogo size={110} />
         </div>
@@ -21,6 +58,9 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
         <p style={{ color:"var(--muted)", fontSize:11, marginTop:4 }}>A friendly prediction game for the SRI Dads community</p>
       </div>
       <div style={{ padding:"18px 16px", display:"flex", flexDirection:"column", gap:14 }}>
+        {/* Countdown */}
+        <Countdown />
+
         {!me ? (
           <div className="card-gold" style={{ padding:20, textAlign:"center" }}>
             <p style={{ fontWeight:700, fontSize:16, marginBottom:4, color:"#fff" }}>Ready to play?</p>
@@ -32,7 +72,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
             <div style={{ width:42, height:42, borderRadius:"50%", background:"var(--gold-pale)", border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>👤</div>
             <div style={{ flex:1 }}>
               <p style={{ fontWeight:700, fontSize:15 }}>Hey, {me.name}!</p>
-              <p style={{ color:"var(--muted)", fontSize:12 }}>{Object.keys((shared.predictions[me.id] || {})).length} predictions saved</p>
+              <p style={{ color:"var(--muted)", fontSize:12 }}>{Object.keys((shared.predictions[me.id] || {})).length} predictions saved · auto-saved ✓</p>
             </div>
             <button className="btn btn-ghost btn-sm" onClick={() => setView("predict")}>Predict →</button>
           </div>
@@ -185,6 +225,11 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   const groupMatches = shared.matches.filter(m => m.group === activeGroup);
   const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
 
+  // Infer suggested knockout teams from group predictions
+  const knockoutPreds = {};
+  shared.knockoutMatches.forEach(m => { if (myPreds[m.id]) knockoutPreds[m.id] = myPreds[m.id]; });
+  const suggested = inferKnockoutBracket(shared.matches, knockoutPreds, myPreds, {});
+
   function updatePred(matchId, hg, ag) {
     persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: { homeGoals: hg, awayGoals: ag } } } }));
   }
@@ -208,45 +253,109 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
       <div style={{ padding:"0 16px" }}>
         {activeStage === "group" && (
           <div>
+            {isPredictionLocked() && (
+              <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
+                <p style={{ fontSize:12, color:"#E05555", fontWeight:600 }}>🔒 Group stage predictions are locked — the tournament has started!</p>
+              </div>
+            )}
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
               {Object.keys(GROUPS_2026).map(g => (
                 <button key={g} className={`gtab ${activeGroup === g ? "on" : "off"}`} onClick={() => setActiveGroup(g)}>{g}</button>
               ))}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={updatePred} showResult />)}
+              {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={isPredictionLocked() ? null : updatePred} showResult />)}
             </div>
           </div>
         )}
         {activeStage === "knockout" && (
           <div>
+            <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
+              <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>💡 Predict using the dropdowns — only teams that can realistically reach each match are shown.</p>
+            </div>
             {stages.map(stage => (
               <div key={stage} style={{ marginBottom:20 }}>
                 <p className="lbl" style={{ marginBottom:10 }}>{stage}</p>
-                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                   {shared.knockoutMatches.filter(m => m.stage === stage).map(m => {
                     const pred = myPreds[m.id] || {};
-                    const hasFill = pred.homeGoals !== undefined && pred.awayGoals !== undefined;
                     const pts = m.result ? calcPts(pred, m.result) : null;
-                    const hasRealTeams = FLAGS[m.home] && FLAGS[m.away];
                     const locked = !!m.result;
+                    const eligible = getEligibleTeams(m.id);
+                    const sug = suggested[m.id] || {};
+
+                    // Use prediction if set, otherwise fall back to suggested
+                    const homeVal = pred.homeTeam || sug.home || "";
+                    const awayVal = pred.awayTeam || sug.away || "";
+                    const homeIsAuto = !pred.homeTeam && !!sug.home;
+                    const awayIsAuto = !pred.awayTeam && !!sug.away;
+
+                    function setHometeam(val) {
+                      persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...pred, homeTeam: val } } } }));
+                    }
+                    function setAwayTeam(val) {
+                      persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...pred, awayTeam: val } } } }));
+                    }
+
                     return (
-                      <div key={m.id} style={{ marginBottom:4 }}>
-                        <div style={{ fontSize:10, color:"var(--gold)", padding:"2px 4px 4px", fontWeight:600 }}>{m.label}</div>
-                        <div className={`mrow ${locked ? "played" : ""}`}>
-                          <div style={{ flex:1, textAlign:"right", fontSize:12, fontWeight:600 }}>
-                            {hasRealTeams ? <TeamBadge team={m.home} right /> : <span style={{ color:"var(--muted)", fontSize:11 }}>{m.home}</span>}
+                      <div key={m.id} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid var(--bd)", borderRadius:12, padding:"12px 14px" }}>
+                        <p style={{ fontSize:10, color:"var(--gold)", fontWeight:600, marginBottom:10 }}>{m.label}</p>
+
+                        {/* Home team */}
+                        <div style={{ marginBottom:8 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                            <p style={{ fontSize:10, color:"var(--muted)" }}>Home team</p>
+                            {homeIsAuto && <span style={{ fontSize:9, color:"var(--gold)", fontWeight:600 }}>✨ auto-suggested</span>}
+                            {pred.homeTeam && <span style={{ fontSize:9, color:"var(--ok)", fontWeight:600 }}>✓ your pick</span>}
                           </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            <input type="number" min="0" max="20" className={`sbox ${hasFill ? "filled" : ""}`} value={pred.homeGoals ?? ""} disabled={locked || !hasRealTeams} onChange={e => updatePred(m.id, e.target.value, pred.awayGoals ?? "")} />
-                            <span style={{ color:"var(--muted)", fontWeight:700, fontSize:14 }}>–</span>
-                            <input type="number" min="0" max="20" className={`sbox ${hasFill ? "filled" : ""}`} value={pred.awayGoals ?? ""} disabled={locked || !hasRealTeams} onChange={e => updatePred(m.id, pred.homeGoals ?? "", e.target.value)} />
-                          </div>
-                          <div style={{ flex:1, fontSize:12, fontWeight:600 }}>
-                            {hasRealTeams ? <TeamBadge team={m.away} /> : <span style={{ color:"var(--muted)", fontSize:11 }}>{m.away}</span>}
-                          </div>
+                          {locked && m.home && FLAGS[m.home] ? (
+                            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 12px", background:"rgba(255,255,255,0.04)", borderRadius:8 }}>
+                              <span>{FLAGS[m.home]}</span><span style={{ fontWeight:600, fontSize:13 }}>{m.home}</span>
+                            </div>
+                          ) : (
+                            <select className="inp" value={homeVal}
+                              style={{ borderColor: pred.homeTeam ? "var(--ok)" : homeIsAuto ? "var(--gold-bd)" : "var(--bd)" }}
+                              onChange={e => setHometeam(e.target.value)}>
+                              <option value="">Select team...</option>
+                              {eligible.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Score */}
+                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                          <input type="number" min="0" max="20"
+                            className={`sbox ${pred.homeGoals !== undefined ? "filled" : ""}`}
+                            value={pred.homeGoals ?? ""} disabled={locked}
+                            onChange={e => updatePred(m.id, e.target.value, pred.awayGoals ?? "")} />
+                          <span style={{ color:"var(--muted)", fontWeight:700, fontSize:16 }}>–</span>
+                          <input type="number" min="0" max="20"
+                            className={`sbox ${pred.awayGoals !== undefined ? "filled" : ""}`}
+                            value={pred.awayGoals ?? ""} disabled={locked}
+                            onChange={e => updatePred(m.id, pred.homeGoals ?? "", e.target.value)} />
                           {pts !== null && <Pts pts={pts} />}
-                          {m.result && <span style={{ color:"var(--muted)", fontSize:11 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>}
+                          {m.result && <span style={{ fontSize:11, color:"var(--muted)" }}>{m.result.homeGoals}–{m.result.awayGoals}</span>}
+                        </div>
+
+                        {/* Away team */}
+                        <div>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                            <p style={{ fontSize:10, color:"var(--muted)" }}>Away team</p>
+                            {awayIsAuto && <span style={{ fontSize:9, color:"var(--gold)", fontWeight:600 }}>✨ auto-suggested</span>}
+                            {pred.awayTeam && <span style={{ fontSize:9, color:"var(--ok)", fontWeight:600 }}>✓ your pick</span>}
+                          </div>
+                          {locked && m.away && FLAGS[m.away] ? (
+                            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 12px", background:"rgba(255,255,255,0.04)", borderRadius:8 }}>
+                              <span>{FLAGS[m.away]}</span><span style={{ fontWeight:600, fontSize:13 }}>{m.away}</span>
+                            </div>
+                          ) : (
+                            <select className="inp" value={awayVal}
+                              style={{ borderColor: pred.awayTeam ? "var(--ok)" : awayIsAuto ? "var(--gold-bd)" : "var(--bd)" }}
+                              onChange={e => setAwayTeam(e.target.value)}>
+                              <option value="">Select team...</option>
+                              {eligible.filter(t => t !== homeVal).map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
+                            </select>
+                          )}
                         </div>
                       </div>
                     );
@@ -352,10 +461,12 @@ function ScheduleView({ shared }) {
   const [selectedDate, setSelectedDate] = useState("");
   const [activeStage, setActiveStage] = useState("group");
 
-  // All unique dates from group matches
+  // All unique dates from group matches — in match order (not alphabetical)
   const allDates = useMemo(() => {
-    const dates = [...new Set(shared.matches.map(m => m.date))];
-    return dates.sort();
+    const seen = new Set();
+    const dates = [];
+    shared.matches.forEach(m => { if (!seen.has(m.date)) { seen.add(m.date); dates.push(m.date); } });
+    return dates; // already in chronological order from data.js
   }, [shared.matches]);
 
   // Filter logic
@@ -369,7 +480,7 @@ function ScheduleView({ shared }) {
     return matches;
   }, [shared.matches, searchMode, selectedCountry, selectedDate]);
 
-  // Group filtered matches by date for display
+  // Group filtered matches by date — preserve insertion order
   const matchesByDate = useMemo(() => {
     const map = {};
     filteredGroupMatches.forEach(m => {
@@ -379,7 +490,13 @@ function ScheduleView({ shared }) {
     return map;
   }, [filteredGroupMatches]);
 
-  const sortedDates = Object.keys(matchesByDate).sort();
+  // Keep dates in chronological order (order of first appearance in matches)
+  const sortedDates = useMemo(() => {
+    const seen = new Set();
+    const dates = [];
+    filteredGroupMatches.forEach(m => { if (!seen.has(m.date)) { seen.add(m.date); dates.push(m.date); } });
+    return dates;
+  }, [filteredGroupMatches]);
 
   const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
 
@@ -815,6 +932,7 @@ export default function App() {
     { id:"rules",       icon:"📋", label:"Rules" },
     { id:"results",     icon:"📝", label:"Scores",  hidden: !isAdminUrl },
     { id:"admin",       icon:"⚙️", label:"Admin",   hidden: !isAdminUrl },
+    { id:"logout",      icon:"👋", label:"Log out",  hidden: !me },
   ].filter(n => !n.hidden);
 
   const sp = { shared, persist, me, setView, showToast };
@@ -836,6 +954,7 @@ export default function App() {
         {navItems.map(n => (
           <button key={n.id} className={`nbtn ${view === n.id ? "on" : "off"}`} onClick={() => {
             if (n.id === "predict" && !me) setView("join");
+            else if (n.id === "logout") logout();
             else setView(n.id);
           }}>
             <span style={{ fontSize:19 }}>{n.id === "predict" && me ? "😎" : n.icon}</span>
