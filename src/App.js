@@ -5,7 +5,7 @@ import { CSS } from './styles';
 import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox, SriDadsLogo
 } from './components';
-import { calcPts as calcPtsImport } from './data';
+import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval } from './scoreSync';
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
 
@@ -312,73 +312,188 @@ function LeaderboardView({ leaderboard, shared }) {
 
 // ─── SCHEDULE ─────────────────────────────────────────────────────────────────
 
+function MatchCard({ m }) {
+  const hasResult = !!m.result;
+  return (
+    <div className="card" style={{ padding:"12px 14px", borderLeft: hasResult ? "3px solid var(--gold)" : "3px solid transparent" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+        <span style={{ fontSize:10, color:"var(--gold)", fontWeight:600 }}>
+          {m.group ? `Group ${m.group}` : m.stage} · {m.date}
+        </span>
+        <span style={{ fontSize:10, color:"var(--muted)" }}>🕐 {m.time} Dubai</span>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, justifyContent:"flex-end" }}>
+          <span style={{ fontSize:13, fontWeight:700 }}>{m.home}</span>
+          <span style={{ fontSize:18 }}>{FLAGS[m.home] || "🏳️"}</span>
+        </div>
+        <div style={{ padding:"5px 14px", background: hasResult ? "var(--gold-pale)" : "rgba(255,255,255,0.06)",
+          border: hasResult ? "1px solid var(--gold-bd)" : "none",
+          borderRadius:8, margin:"0 10px", minWidth:58, textAlign:"center" }}>
+          {hasResult
+            ? <span style={{ fontWeight:800, color:"var(--gold)", fontSize:18, letterSpacing:1 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>
+            : <span style={{ color:"var(--muted)", fontSize:12, fontWeight:600 }}>vs</span>
+          }
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
+          <span style={{ fontSize:18 }}>{FLAGS[m.away] || "🏳️"}</span>
+          <span style={{ fontSize:13, fontWeight:700 }}>{m.away}</span>
+        </div>
+      </div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <p style={{ fontSize:10, color:"var(--muted)" }}>📍 {m.venue || m.label || ""}</p>
+        {hasResult && <span style={{ fontSize:10, color:"var(--gold)", fontWeight:700, background:"var(--gold-pale)", padding:"2px 8px", borderRadius:999 }}>Final score</span>}
+      </div>
+    </div>
+  );
+}
+
 function ScheduleView({ shared }) {
-  const [activeGroup, setActiveGroup] = useState("A");
+  const [searchMode, setSearchMode] = useState("all"); // all | country | date
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [activeStage, setActiveStage] = useState("group");
-  const groupMatches = shared.matches.filter(m => m.group === activeGroup);
+
+  // All unique dates from group matches
+  const allDates = useMemo(() => {
+    const dates = [...new Set(shared.matches.map(m => m.date))];
+    return dates.sort();
+  }, [shared.matches]);
+
+  // Filter logic
+  const filteredGroupMatches = useMemo(() => {
+    let matches = shared.matches;
+    if (searchMode === "country" && selectedCountry) {
+      matches = matches.filter(m => m.home === selectedCountry || m.away === selectedCountry);
+    } else if (searchMode === "date" && selectedDate) {
+      matches = matches.filter(m => m.date === selectedDate);
+    }
+    return matches;
+  }, [shared.matches, searchMode, selectedCountry, selectedDate]);
+
+  // Group filtered matches by date for display
+  const matchesByDate = useMemo(() => {
+    const map = {};
+    filteredGroupMatches.forEach(m => {
+      if (!map[m.date]) map[m.date] = [];
+      map[m.date].push(m);
+    });
+    return map;
+  }, [filteredGroupMatches]);
+
+  const sortedDates = Object.keys(matchesByDate).sort();
+
   const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
+
+  // Country's group matches count
+  const countryMatchCount = selectedCountry
+    ? shared.matches.filter(m => m.home === selectedCountry || m.away === selectedCountry).length
+    : 0;
 
   return (
     <div>
       <div style={{ padding:"16px 16px 0" }}>
         <p style={{ fontFamily:"'Playfair Display',serif", fontSize:24, marginBottom:4, color:"var(--gold)" }}>📅 Full Schedule</p>
-        <p style={{ color:"var(--muted)", fontSize:12, marginBottom:16 }}>All times in Dubai time (GST, UTC+4)</p>
-        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+        <p style={{ color:"var(--muted)", fontSize:12, marginBottom:14 }}>All times in Dubai time (GST, UTC+4)</p>
+
+        {/* Stage toggle */}
+        <div style={{ display:"flex", gap:8, marginBottom:14 }}>
           {[["group","Group Stage"],["knockout","Knockout"]].map(([s, l]) => (
             <button key={s} className={`tab ${activeStage===s?"on":"off"}`} onClick={() => setActiveStage(s)}>{l}</button>
           ))}
         </div>
-      </div>
 
-      {activeStage === "group" && (
-        <div style={{ padding:"0 16px" }}>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
-            {Object.keys(GROUPS_2026).map(g => (
-              <button key={g} className={`gtab ${activeGroup===g?"on":"off"}`} onClick={() => setActiveGroup(g)}>{g}</button>
-            ))}
-          </div>
-          <div className="card-gold" style={{ padding:14, marginBottom:14 }}>
-            <p className="lbl" style={{ marginBottom:8 }}>Group {activeGroup} teams</p>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-              {GROUPS_2026[activeGroup].map((t, i) => (
-                <div key={t} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"6px 10px" }}>
-                  <span style={{ fontSize:10, color:"var(--gold)", fontWeight:700 }}>#{i+1}</span>
-                  <span style={{ fontSize:16 }}>{FLAGS[t]}</span>
-                  <span style={{ fontSize:13, fontWeight:600 }}>{t}</span>
-                </div>
+        {/* Search mode — only for group stage */}
+        {activeStage === "group" && (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+              {[["all","🌍 All"],["country","🏳️ Country"],["date","📅 Date"]].map(([m, l]) => (
+                <button key={m} className={`tab ${searchMode===m?"on":"off"}`}
+                  style={{ fontSize:12, padding:"7px 14px" }}
+                  onClick={() => { setSearchMode(m); setSelectedCountry(""); setSelectedDate(""); }}>
+                  {l}
+                </button>
               ))}
             </div>
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {groupMatches.map(m => (
-              <div key={m.id} className="card" style={{ padding:"12px 14px" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                  <span style={{ fontSize:11, color:"var(--gold)", fontWeight:600 }}>📅 {m.date}</span>
-                  <span style={{ fontSize:11, color:"var(--muted)" }}>🕐 {m.time} Dubai</span>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, justifyContent:"flex-end" }}>
-                    <span style={{ fontSize:13, fontWeight:600 }}>{m.home}</span>
-                    <span style={{ fontSize:18 }}>{FLAGS[m.home]}</span>
+
+            {/* Country picker */}
+            {searchMode === "country" && (
+              <div>
+                <select className="inp" value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)}>
+                  <option value="">Select a country...</option>
+                  {ALL_TEAMS.map(t => (
+                    <option key={t} value={t}>{FLAGS[t]} {t}</option>
+                  ))}
+                </select>
+                {selectedCountry && (
+                  <div style={{ marginTop:10, display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:10 }}>
+                    <span style={{ fontSize:24 }}>{FLAGS[selectedCountry]}</span>
+                    <div>
+                      <p style={{ fontWeight:700, fontSize:14 }}>{selectedCountry}</p>
+                      <p style={{ fontSize:11, color:"var(--muted)" }}>{countryMatchCount} group stage matches</p>
+                    </div>
                   </div>
-                  <div style={{ padding:"4px 12px", background:"rgba(255,255,255,0.06)", borderRadius:6, margin:"0 10px", minWidth:50, textAlign:"center" }}>
-                    {m.result
-                      ? <span style={{ fontWeight:700, color:"var(--gold)", fontSize:16 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>
-                      : <span style={{ color:"var(--muted)", fontSize:13 }}>vs</span>
-                    }
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
-                    <span style={{ fontSize:18 }}>{FLAGS[m.away]}</span>
-                    <span style={{ fontSize:13, fontWeight:600 }}>{m.away}</span>
-                  </div>
-                </div>
-                <p style={{ fontSize:10, color:"var(--muted)", textAlign:"center" }}>📍 {m.venue}</p>
+                )}
               </div>
-            ))}
+            )}
+
+            {/* Date picker */}
+            {searchMode === "date" && (
+              <div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {allDates.map(d => (
+                    <button key={d}
+                      onClick={() => setSelectedDate(d === selectedDate ? "" : d)}
+                      style={{ padding:"7px 12px", borderRadius:8, border:`1.5px solid ${selectedDate===d?"var(--gold)":"var(--border)"}`,
+                        background: selectedDate===d ? "var(--gold-pale)" : "rgba(255,255,255,0.04)",
+                        color: selectedDate===d ? "var(--gold)" : "var(--muted)",
+                        cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"Inter,sans-serif",
+                        whiteSpace:"nowrap" }}>
+                      {d.replace("Thu ","").replace("Fri ","").replace("Sat ","").replace("Sun ","").replace("Mon ","").replace("Tue ","").replace("Wed ","")}
+                      {shared.matches.filter(m => m.date === d && m.result).length > 0 &&
+                        <span style={{ marginLeft:4, color:"var(--gold)" }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+                {selectedDate && (
+                  <p style={{ fontSize:11, color:"var(--muted)", marginTop:8 }}>
+                    {matchesByDate[selectedDate]?.length || 0} matches on {selectedDate}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
+        )}
+      </div>
+
+      {/* GROUP STAGE RESULTS */}
+      {activeStage === "group" && (
+        <div style={{ padding:"0 16px" }}>
+          {sortedDates.length === 0 && (
+            <div style={{ textAlign:"center", padding:40, color:"var(--muted)" }}>
+              <p style={{ fontSize:32, marginBottom:8 }}>🔍</p>
+              <p>No matches found</p>
+            </div>
+          )}
+          {sortedDates.map(date => (
+            <div key={date} style={{ marginBottom:20 }}>
+              {/* Date header */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                <div style={{ height:1, flex:1, background:"var(--border)" }}/>
+                <span style={{ fontSize:11, fontWeight:700, color:"var(--gold)", whiteSpace:"nowrap", letterSpacing:"0.5px" }}>
+                  📅 {date}
+                </span>
+                <div style={{ height:1, flex:1, background:"var(--border)" }}/>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {matchesByDate[date].map(m => <MatchCard key={m.id} m={m} />)}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
+      {/* KNOCKOUT */}
       {activeStage === "knockout" && (
         <div style={{ padding:"0 16px" }}>
           {stages.map(stage => {
@@ -386,27 +501,32 @@ function ScheduleView({ shared }) {
             if (!matches.length) return null;
             return (
               <div key={stage} style={{ marginBottom:20 }}>
-                <p className="lbl" style={{ marginBottom:10 }}>{stage}</p>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                  <div style={{ height:1, flex:1, background:"var(--border)" }}/>
+                  <span style={{ fontSize:11, fontWeight:700, color:"var(--gold)", whiteSpace:"nowrap", letterSpacing:"0.5px" }}>{stage.toUpperCase()}</span>
+                  <div style={{ height:1, flex:1, background:"var(--border)" }}/>
+                </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                   {matches.map(m => {
                     const hasReal = FLAGS[m.home] && FLAGS[m.away];
+                    const hasResult = !!m.result;
                     return (
-                      <div key={m.id} className="card" style={{ padding:"12px 14px" }}>
-                        <p style={{ fontSize:11, color:"var(--gold)", fontWeight:600, marginBottom:8 }}>{m.label}</p>
+                      <div key={m.id} className="card" style={{ padding:"12px 14px", borderLeft: hasResult ? "3px solid var(--gold)" : "3px solid transparent" }}>
+                        <p style={{ fontSize:10, color:"var(--gold)", fontWeight:600, marginBottom:8 }}>{m.label}</p>
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, justifyContent:"flex-end" }}>
-                            <span style={{ fontSize:13, fontWeight:600, color: hasReal ? "var(--text)" : "var(--muted)" }}>{m.home}</span>
+                            <span style={{ fontSize:13, fontWeight:700, color: hasReal ? "var(--text)" : "var(--muted)" }}>{m.home}</span>
                             {hasReal && <span style={{ fontSize:18 }}>{FLAGS[m.home]}</span>}
                           </div>
-                          <div style={{ padding:"4px 12px", background:"rgba(255,255,255,0.06)", borderRadius:6, margin:"0 10px", minWidth:50, textAlign:"center" }}>
-                            {m.result
-                              ? <span style={{ fontWeight:700, color:"var(--gold)", fontSize:16 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>
-                              : <span style={{ color:"var(--muted)", fontSize:13 }}>vs</span>
+                          <div style={{ padding:"5px 14px", background: hasResult ? "var(--gold-pale)" : "rgba(255,255,255,0.06)", borderRadius:8, margin:"0 10px", minWidth:58, textAlign:"center" }}>
+                            {hasResult
+                              ? <span style={{ fontWeight:800, color:"var(--gold)", fontSize:18 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>
+                              : <span style={{ color:"var(--muted)", fontSize:12 }}>vs</span>
                             }
                           </div>
                           <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
                             {hasReal && <span style={{ fontSize:18 }}>{FLAGS[m.away]}</span>}
-                            <span style={{ fontSize:13, fontWeight:600, color: hasReal ? "var(--text)" : "var(--muted)" }}>{m.away}</span>
+                            <span style={{ fontSize:13, fontWeight:700, color: hasReal ? "var(--text)" : "var(--muted)" }}>{m.away}</span>
                           </div>
                         </div>
                       </div>
@@ -422,6 +542,7 @@ function ScheduleView({ shared }) {
     </div>
   );
 }
+
 
 // ─── RULES ────────────────────────────────────────────────────────────────────
 
@@ -606,6 +727,49 @@ export default function App() {
     return () => clearInterval(interval);
   }, [saving]);
 
+  // ── Auto-sync scores from WC2026 API ──────────────────────────────────────
+  const [lastSync, setLastSync] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'ok' | 'error'
+
+  useEffect(() => {
+    let timeoutId;
+
+    async function syncScores() {
+      setSyncStatus('syncing');
+      try {
+        const [completed, live] = await Promise.all([
+          fetchCompletedMatches(),
+          fetchLiveMatches(),
+        ]);
+
+        const allApiMatches = [...completed, ...live];
+
+        if (allApiMatches.length > 0) {
+          setShared(prev => {
+            if (!prev) return prev;
+            const { state, changed } = mergeApiResults(prev, allApiMatches);
+            if (changed) {
+              savePool(state);
+              setLastSync(new Date());
+            }
+            return state;
+          });
+        }
+        setSyncStatus('ok');
+        setLastSync(new Date());
+        const interval = getPollInterval(live);
+        timeoutId = setTimeout(syncScores, interval);
+      } catch (e) {
+        setSyncStatus('error');
+        timeoutId = setTimeout(syncScores, 5 * 60_000);
+      }
+    }
+
+    // Start syncing after initial load
+    timeoutId = setTimeout(syncScores, 3000);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   const persist = useCallback(async (updater) => {
     setSaving(true);
     setShared(prev => {
@@ -660,7 +824,7 @@ export default function App() {
   return (
     <div className="app">
       <style>{CSS}</style>
-      <TopBar saving={saving} />
+      <TopBar saving={saving} syncStatus={syncStatus} lastSync={lastSync} />
       {view === "home"        && <HomeView {...sp} leaderboard={leaderboard} completedMatches={completedMatches} totalMatches={totalMatches} />}
       {view === "join"        && <JoinView {...sp} loginAs={loginAs} />}
       {view === "predict"     && <PredictView {...sp} logout={logout} activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeStage={activeStage} setActiveStage={setActiveStage} />}
