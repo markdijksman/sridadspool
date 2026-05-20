@@ -5,14 +5,14 @@ import { CSS } from './styles';
 import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox
 } from './components';
+import { calcPts as calcPtsImport } from './data';
 
-// ─── HOME ────────────────────────────────────────────────────────────────────
+// ─── HOME ─────────────────────────────────────────────────────────────────────
 
 function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, setView }) {
   return (
     <div>
-      <div style={{ background:"linear-gradient(180deg,rgba(201,168,76,0.07) 0%,transparent 100%)",
-        padding:"28px 20px 22px", textAlign:"center", borderBottom:"1px solid var(--bd)" }}>
+      <div style={{ background:"linear-gradient(180deg,rgba(201,168,76,0.07) 0%,transparent 100%)", padding:"28px 20px 22px", textAlign:"center", borderBottom:"1px solid var(--bd)" }}>
         <div style={{ fontSize:52, marginBottom:8 }}>⚽</div>
         <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:30, lineHeight:1.1, marginBottom:6, color:"#fff" }}>{shared.poolName}</h1>
         <p style={{ color:"var(--gold)", fontSize:13, fontWeight:600 }}>FIFA World Cup 2026 · USA / Canada / Mexico</p>
@@ -27,8 +27,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
           </div>
         ) : (
           <div className="card" style={{ padding:16, display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:42, height:42, borderRadius:"50%", background:"var(--gold-pale)",
-              border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>👤</div>
+            <div style={{ width:42, height:42, borderRadius:"50%", background:"var(--gold-pale)", border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>👤</div>
             <div style={{ flex:1 }}>
               <p style={{ fontWeight:700, fontSize:15 }}>Hey, {me.name}!</p>
               <p style={{ color:"var(--muted)", fontSize:12 }}>{Object.keys((shared.predictions[me.id] || {})).length} predictions saved</p>
@@ -60,21 +59,6 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
             ))
           }
         </div>
-        {/* WhatsApp share button */}
-        <a
-          href={`https://wa.me/?text=${encodeURIComponent("⚽ Join our World Cup 2026 Pool!\n\nSign up and predict match scores to compete with the other SRI Dads.\n\n🔗 www.sridads.com\n\nMay the best dad win! 🏆")}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10,
-            background:"#25D366", borderRadius:12, padding:"14px 20px",
-            color:"#fff", fontWeight:700, fontSize:14, textDecoration:"none",
-            boxShadow:"0 4px 16px rgba(37,211,102,0.3)" }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-          Share with the Dads on WhatsApp
-        </a>
-
         <div className="card" style={{ padding:16 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <span style={{ fontFamily:"'Playfair Display',serif", fontSize:18, color:"var(--gold)" }}>📋 Scoring</span>
@@ -87,6 +71,12 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
             </div>
           ))}
         </div>
+        <a href={`https://wa.me/?text=${encodeURIComponent("⚽ Join our World Cup 2026 Pool!\n\nSign up and predict match scores to compete with the other SRI Dads.\n\n🔗 www.sridads.com\n\nMay the best dad win! 🏆")}`}
+          target="_blank" rel="noopener noreferrer"
+          style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, background:"#25D366", borderRadius:12, padding:"14px 20px", color:"#fff", fontWeight:700, fontSize:14, textDecoration:"none", boxShadow:"0 4px 16px rgba(37,211,102,0.3)" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Share with the Dads on WhatsApp
+        </a>
       </div>
       <PageFooter />
     </div>
@@ -108,8 +98,7 @@ function JoinView({ shared, persist, loginAs, setView }) {
     if (!name.trim()) return setErr("Please enter your name.");
     if (pin.length < 4) return setErr("Please choose a 4-digit PIN.");
     if (pin !== pin2) return setErr("PINs don't match.");
-    if (shared.participants.find(p => p.name.toLowerCase() === name.trim().toLowerCase()))
-      return setErr("That name is already taken.");
+    if (shared.participants.find(p => p.name.toLowerCase() === name.trim().toLowerCase())) return setErr("That name is already taken.");
     const np = { id: Date.now().toString(), name: name.trim(), pin, joinedAt: new Date().toISOString() };
     persist(s => ({ ...s, participants: [...s.participants, np] }));
     loginAs({ id: np.id, name: np.name });
@@ -126,88 +115,52 @@ function JoinView({ shared, persist, loginAs, setView }) {
   return (
     <div>
       <div style={{ padding:"20px 20px" }}>
-        <button className="btn btn-ghost btn-sm" style={{ marginBottom:20 }}
-          onClick={() => mode === "choose" ? setView("home") : setMode("choose")}>← Back</button>
-
+        <button className="btn btn-ghost btn-sm" style={{ marginBottom:20 }} onClick={() => mode === "choose" ? setView("home") : setMode("choose")}>← Back</button>
         {mode === "choose" && (
           <div>
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:4, color:"#fff" }}>Welcome, Dad! 👋</h2>
             <p style={{ color:"var(--muted)", fontSize:13, marginBottom:28 }}>First time, or returning?</p>
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-              <button className="btn btn-gold" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }}
-                onClick={() => setMode("register")}>
+              <button className="btn btn-gold" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }} onClick={() => setMode("register")}>
                 <span style={{ fontSize:22 }}>🆕</span>
-                <div>
-                  <div>I'm new — sign me up</div>
-                  <div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Create your account</div>
-                </div>
+                <div><div>I'm new — sign me up</div><div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Create your account</div></div>
               </button>
               {shared.participants.length > 0 && (
-                <button className="btn btn-ghost" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }}
-                  onClick={() => setMode("login")}>
+                <button className="btn btn-ghost" style={{ padding:18, fontSize:15, textAlign:"left", display:"flex", gap:12, alignItems:"center" }} onClick={() => setMode("login")}>
                   <span style={{ fontSize:22 }}>🔑</span>
-                  <div>
-                    <div>I'm already signed up</div>
-                    <div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Log back in</div>
-                  </div>
+                  <div><div>I'm already signed up</div><div style={{ fontSize:12, fontWeight:500, opacity:.75 }}>Log back in</div></div>
                 </button>
               )}
             </div>
           </div>
         )}
-
         {mode === "register" && (
           <div>
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:4, color:"#fff" }}>Sign Up</h2>
             <p style={{ color:"var(--muted)", fontSize:13, marginBottom:24 }}>Choose a name and a 4-digit PIN.</p>
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-              <div>
-                <p className="lbl" style={{ marginBottom:6 }}>Your name</p>
-                <input className="inp" placeholder="e.g. Thomas" value={name} onChange={e => setName(e.target.value)} />
-              </div>
-              <div>
-                <p className="lbl" style={{ marginBottom:6 }}>PIN (4 digits)</p>
-                <input className="inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
-                  value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} />
-              </div>
-              <div>
-                <p className="lbl" style={{ marginBottom:6 }}>Repeat PIN</p>
-                <input className="inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
-                  value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g, ""))} />
-              </div>
+              <div><p className="lbl" style={{ marginBottom:6 }}>Your name</p><input className="inp" placeholder="e.g. Thomas" value={name} onChange={e => setName(e.target.value)} /></div>
+              <div><p className="lbl" style={{ marginBottom:6 }}>PIN (4 digits)</p><input className="inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} /></div>
+              <div><p className="lbl" style={{ marginBottom:6 }}>Repeat PIN</p><input className="inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g, ""))} /></div>
               {err && <p style={{ color:"var(--danger)", fontSize:13 }}>{err}</p>}
-              <button className="btn btn-gold" onClick={handleRegister} disabled={!name || pin.length < 4 || pin2.length < 4}>
-                Sign Up & Start →
-              </button>
+              <button className="btn btn-gold" onClick={handleRegister} disabled={!name || pin.length < 4 || pin2.length < 4}>Sign Up & Start →</button>
             </div>
           </div>
         )}
-
         {mode === "login" && (
           <div>
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:4, color:"#fff" }}>Log In</h2>
             <p style={{ color:"var(--muted)", fontSize:13, marginBottom:20 }}>Select your name and enter your PIN.</p>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
               {shared.participants.map(p => (
-                <button key={p.id}
-                  style={{ background: selId === p.id ? "var(--gold-pale)" : "rgba(255,255,255,.03)",
-                    border:`1.5px solid ${selId === p.id ? "var(--gold)" : "var(--bd)"}`,
-                    borderRadius:12, padding:"14px 18px", cursor:"pointer", color:"var(--text)",
-                    display:"flex", alignItems:"center", gap:12, fontFamily:"Inter,sans-serif", fontSize:15, fontWeight:600 }}
-                  onClick={() => setSelId(p.id)}>
+                <button key={p.id} style={{ background: selId === p.id ? "var(--gold-pale)" : "rgba(255,255,255,.03)", border:`1.5px solid ${selId === p.id ? "var(--gold)" : "var(--bd)"}`, borderRadius:12, padding:"14px 18px", cursor:"pointer", color:"var(--text)", display:"flex", alignItems:"center", gap:12, fontFamily:"Inter,sans-serif", fontSize:15, fontWeight:600 }} onClick={() => setSelId(p.id)}>
                   <span style={{ fontSize:20 }}>👤</span>
                   <span style={{ flex:1, textAlign:"left" }}>{p.name}</span>
                   {selId === p.id && <span style={{ color:"var(--gold)" }}>✓</span>}
                 </button>
               ))}
             </div>
-            {selId && (
-              <div>
-                <p className="lbl" style={{ marginBottom:6 }}>Your PIN</p>
-                <input className="inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
-                  value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} style={{ marginBottom:14 }} />
-              </div>
-            )}
+            {selId && <div><p className="lbl" style={{ marginBottom:6 }}>Your PIN</p><input className="inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} style={{ marginBottom:14 }} /></div>}
             {err && <p style={{ color:"var(--danger)", fontSize:13, marginBottom:10 }}>{err}</p>}
             <button className="btn btn-gold" onClick={handleLogin} disabled={!selId || pin.length < 4}>Log In →</button>
           </div>
@@ -221,18 +174,6 @@ function JoinView({ shared, persist, loginAs, setView }) {
 // ─── PREDICT ─────────────────────────────────────────────────────────────────
 
 function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup, activeStage, setActiveStage, setView }) {
-  const myPreds = shared.predictions[me.id] || {};
-  const filled = Object.values(myPreds).filter(p => p.homeGoals !== "" && p.awayGoals !== "").length;
-  const groupMatches = shared.matches.filter(m => m.group === activeGroup);
-  const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Final"];
-
-  function updatePred(matchId, hg, ag) {
-    persist(s => ({
-      ...s,
-      predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: { homeGoals: hg, awayGoals: ag } } }
-    }));
-  }
-
   if (!me) return (
     <div>
       <div style={{ padding:"60px 20px", textAlign:"center" }}>
@@ -244,6 +185,15 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
       <PageFooter />
     </div>
   );
+
+  const myPreds = shared.predictions[me.id] || {};
+  const filled = Object.values(myPreds).filter(p => p.homeGoals !== "" && p.awayGoals !== "").length;
+  const groupMatches = shared.matches.filter(m => m.group === activeGroup);
+  const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
+
+  function updatePred(matchId, hg, ag) {
+    persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: { homeGoals: hg, awayGoals: ag } } } }));
+  }
 
   return (
     <div>
@@ -269,7 +219,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                 <button key={g} className={`gtab ${activeGroup === g ? "on" : "off"}`} onClick={() => setActiveGroup(g)}>{g}</button>
               ))}
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
               {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={updatePred} showResult />)}
             </div>
           </div>
@@ -279,25 +229,44 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
             {stages.map(stage => (
               <div key={stage} style={{ marginBottom:20 }}>
                 <p className="lbl" style={{ marginBottom:10 }}>{stage}</p>
-                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                  {shared.knockoutMatches.filter(m => m.stage === stage).map(m => (
-                    <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={updatePred} showResult />
-                  ))}
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {shared.knockoutMatches.filter(m => m.stage === stage).map(m => {
+                    const pred = myPreds[m.id] || {};
+                    const hasFill = pred.homeGoals !== undefined && pred.awayGoals !== undefined;
+                    const pts = m.result ? calcPts(pred, m.result) : null;
+                    const hasRealTeams = FLAGS[m.home] && FLAGS[m.away];
+                    const locked = !!m.result;
+                    return (
+                      <div key={m.id} style={{ marginBottom:4 }}>
+                        <div style={{ fontSize:10, color:"var(--gold)", padding:"2px 4px 4px", fontWeight:600 }}>{m.label}</div>
+                        <div className={`mrow ${locked ? "played" : ""}`}>
+                          <div style={{ flex:1, textAlign:"right", fontSize:12, fontWeight:600 }}>
+                            {hasRealTeams ? <TeamBadge team={m.home} right /> : <span style={{ color:"var(--muted)", fontSize:11 }}>{m.home}</span>}
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                            <input type="number" min="0" max="20" className={`sbox ${hasFill ? "filled" : ""}`} value={pred.homeGoals ?? ""} disabled={locked || !hasRealTeams} onChange={e => updatePred(m.id, e.target.value, pred.awayGoals ?? "")} />
+                            <span style={{ color:"var(--muted)", fontWeight:700, fontSize:14 }}>–</span>
+                            <input type="number" min="0" max="20" className={`sbox ${hasFill ? "filled" : ""}`} value={pred.awayGoals ?? ""} disabled={locked || !hasRealTeams} onChange={e => updatePred(m.id, pred.homeGoals ?? "", e.target.value)} />
+                          </div>
+                          <div style={{ flex:1, fontSize:12, fontWeight:600 }}>
+                            {hasRealTeams ? <TeamBadge team={m.away} /> : <span style={{ color:"var(--muted)", fontSize:11 }}>{m.away}</span>}
+                          </div>
+                          {pts !== null && <Pts pts={pts} />}
+                          {m.result && <span style={{ color:"var(--muted)", fontSize:11 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
             <div className="card-gold" style={{ padding:16, marginTop:4 }}>
               <p style={{ fontWeight:700, marginBottom:8, fontSize:14, color:"#fff" }}>🏆 Who will be World Champion?</p>
-              <select className="inp" value={shared.champions[me.id] || ""}
-                onChange={e => persist(s => ({ ...s, champions: { ...s.champions, [me.id]: e.target.value } }))}>
+              <select className="inp" value={shared.champions[me.id] || ""} onChange={e => persist(s => ({ ...s, champions: { ...s.champions, [me.id]: e.target.value } }))}>
                 <option value="">Select a country...</option>
                 {ALL_TEAMS.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
               </select>
-              {shared.champions[me.id] && (
-                <p style={{ marginTop:8, fontSize:12, color:"var(--muted)" }}>
-                  Your pick: {FLAGS[shared.champions[me.id]]} <strong style={{ color:"var(--text)" }}>{shared.champions[me.id]}</strong>
-                </p>
-              )}
+              {shared.champions[me.id] && <p style={{ marginTop:8, fontSize:12, color:"var(--muted)" }}>Your pick: {FLAGS[shared.champions[me.id]]} <strong style={{ color:"var(--text)" }}>{shared.champions[me.id]}</strong></p>}
             </div>
           </div>
         )}
@@ -327,9 +296,7 @@ function LeaderboardView({ leaderboard, shared }) {
                     <div style={{ flex:1 }}>
                       <p style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>{p.name}</p>
                       <p style={{ fontSize:11, color:"var(--muted)" }}>⭐ {p.exact} exact · ✅ {p.correct} correct</p>
-                      {shared.champions[p.id] && (
-                        <p style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>🏆 Pick: {FLAGS[shared.champions[p.id]]} {shared.champions[p.id]}</p>
-                      )}
+                      {shared.champions[p.id] && <p style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>🏆 Pick: {FLAGS[shared.champions[p.id]]} {shared.champions[p.id]}</p>}
                     </div>
                     <div style={{ textAlign:"right" }}>
                       <span style={{ fontFamily:"'Playfair Display',serif", fontSize:32, color: i===0 ? "var(--gold)" : "var(--text)", lineHeight:1 }}>{p.pts}</span>
@@ -347,7 +314,120 @@ function LeaderboardView({ leaderboard, shared }) {
   );
 }
 
-// ─── RULES ───────────────────────────────────────────────────────────────────
+// ─── SCHEDULE ─────────────────────────────────────────────────────────────────
+
+function ScheduleView({ shared }) {
+  const [activeGroup, setActiveGroup] = useState("A");
+  const [activeStage, setActiveStage] = useState("group");
+  const groupMatches = shared.matches.filter(m => m.group === activeGroup);
+  const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
+
+  return (
+    <div>
+      <div style={{ padding:"16px 16px 0" }}>
+        <p style={{ fontFamily:"'Playfair Display',serif", fontSize:24, marginBottom:4, color:"var(--gold)" }}>📅 Full Schedule</p>
+        <p style={{ color:"var(--muted)", fontSize:12, marginBottom:16 }}>All times in Dubai time (GST, UTC+4)</p>
+        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          {[["group","Group Stage"],["knockout","Knockout"]].map(([s, l]) => (
+            <button key={s} className={`tab ${activeStage===s?"on":"off"}`} onClick={() => setActiveStage(s)}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {activeStage === "group" && (
+        <div style={{ padding:"0 16px" }}>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
+            {Object.keys(GROUPS_2026).map(g => (
+              <button key={g} className={`gtab ${activeGroup===g?"on":"off"}`} onClick={() => setActiveGroup(g)}>{g}</button>
+            ))}
+          </div>
+          <div className="card-gold" style={{ padding:14, marginBottom:14 }}>
+            <p className="lbl" style={{ marginBottom:8 }}>Group {activeGroup} teams</p>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {GROUPS_2026[activeGroup].map((t, i) => (
+                <div key={t} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"6px 10px" }}>
+                  <span style={{ fontSize:10, color:"var(--gold)", fontWeight:700 }}>#{i+1}</span>
+                  <span style={{ fontSize:16 }}>{FLAGS[t]}</span>
+                  <span style={{ fontSize:13, fontWeight:600 }}>{t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {groupMatches.map(m => (
+              <div key={m.id} className="card" style={{ padding:"12px 14px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                  <span style={{ fontSize:11, color:"var(--gold)", fontWeight:600 }}>📅 {m.date}</span>
+                  <span style={{ fontSize:11, color:"var(--muted)" }}>🕐 {m.time} Dubai</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, justifyContent:"flex-end" }}>
+                    <span style={{ fontSize:13, fontWeight:600 }}>{m.home}</span>
+                    <span style={{ fontSize:18 }}>{FLAGS[m.home]}</span>
+                  </div>
+                  <div style={{ padding:"4px 12px", background:"rgba(255,255,255,0.06)", borderRadius:6, margin:"0 10px", minWidth:50, textAlign:"center" }}>
+                    {m.result
+                      ? <span style={{ fontWeight:700, color:"var(--gold)", fontSize:16 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>
+                      : <span style={{ color:"var(--muted)", fontSize:13 }}>vs</span>
+                    }
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
+                    <span style={{ fontSize:18 }}>{FLAGS[m.away]}</span>
+                    <span style={{ fontSize:13, fontWeight:600 }}>{m.away}</span>
+                  </div>
+                </div>
+                <p style={{ fontSize:10, color:"var(--muted)", textAlign:"center" }}>📍 {m.venue}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeStage === "knockout" && (
+        <div style={{ padding:"0 16px" }}>
+          {stages.map(stage => {
+            const matches = shared.knockoutMatches.filter(m => m.stage === stage);
+            if (!matches.length) return null;
+            return (
+              <div key={stage} style={{ marginBottom:20 }}>
+                <p className="lbl" style={{ marginBottom:10 }}>{stage}</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {matches.map(m => {
+                    const hasReal = FLAGS[m.home] && FLAGS[m.away];
+                    return (
+                      <div key={m.id} className="card" style={{ padding:"12px 14px" }}>
+                        <p style={{ fontSize:11, color:"var(--gold)", fontWeight:600, marginBottom:8 }}>{m.label}</p>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, justifyContent:"flex-end" }}>
+                            <span style={{ fontSize:13, fontWeight:600, color: hasReal ? "var(--text)" : "var(--muted)" }}>{m.home}</span>
+                            {hasReal && <span style={{ fontSize:18 }}>{FLAGS[m.home]}</span>}
+                          </div>
+                          <div style={{ padding:"4px 12px", background:"rgba(255,255,255,0.06)", borderRadius:6, margin:"0 10px", minWidth:50, textAlign:"center" }}>
+                            {m.result
+                              ? <span style={{ fontWeight:700, color:"var(--gold)", fontSize:16 }}>{m.result.homeGoals}–{m.result.awayGoals}</span>
+                              : <span style={{ color:"var(--muted)", fontSize:13 }}>vs</span>
+                            }
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
+                            {hasReal && <span style={{ fontSize:18 }}>{FLAGS[m.away]}</span>}
+                            <span style={{ fontSize:13, fontWeight:600, color: hasReal ? "var(--text)" : "var(--muted)" }}>{m.away}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <PageFooter />
+    </div>
+  );
+}
+
+// ─── RULES ────────────────────────────────────────────────────────────────────
 
 function RulesView() {
   const rules = [
@@ -395,14 +475,11 @@ function RulesView() {
   );
 }
 
-// ─── RESULTS ─────────────────────────────────────────────────────────────────
+// ─── RESULTS (admin) ──────────────────────────────────────────────────────────
 
 function ResultsView({ shared, persist, activeGroup, setActiveGroup, activeStage, setActiveStage, adminUnlocked, setAdminUnlocked, showToast }) {
-  const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Final"];
-
-  if (!adminUnlocked) return (
-    <div><PinGate onUnlock={() => setAdminUnlocked(true)} adminPin={shared.adminPin} /><PageFooter /></div>
-  );
+  const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
+  if (!adminUnlocked) return <div><PinGate onUnlock={() => setAdminUnlocked(true)} adminPin={shared.adminPin} /><PageFooter /></div>;
 
   function saveResult(matchId, hg, ag, isKo) {
     const key = isKo ? "knockoutMatches" : "matches";
@@ -411,7 +488,6 @@ function ResultsView({ shared, persist, activeGroup, setActiveGroup, activeStage
   }
 
   const groupMatches = shared.matches.filter(m => m.group === activeGroup);
-
   return (
     <div>
       <div style={{ padding:"16px 16px" }}>
@@ -428,7 +504,7 @@ function ResultsView({ shared, persist, activeGroup, setActiveGroup, activeStage
                 <button key={g} className={`gtab ${activeGroup === g ? "on" : "off"}`} onClick={() => setActiveGroup(g)}>{g}</button>
               ))}
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
               {groupMatches.map(m => <AdminMatchRow key={m.id} match={m} onSave={(h, a) => saveResult(m.id, h, a, false)} />)}
             </div>
           </div>
@@ -436,7 +512,7 @@ function ResultsView({ shared, persist, activeGroup, setActiveGroup, activeStage
         {activeStage === "knockout" && stages.map(stage => (
           <div key={stage} style={{ marginBottom:20 }}>
             <p className="lbl" style={{ marginBottom:10 }}>{stage}</p>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
               {shared.knockoutMatches.filter(m => m.stage === stage).map(m => (
                 <AdminMatchRow key={m.id} match={m} onSave={(h, a) => saveResult(m.id, h, a, true)} />
               ))}
@@ -449,17 +525,12 @@ function ResultsView({ shared, persist, activeGroup, setActiveGroup, activeStage
   );
 }
 
-// ─── ADMIN ───────────────────────────────────────────────────────────────────
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
 
 function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completedMatches, showToast }) {
   const [nameEdit, setNameEdit] = useState("");
-
-  if (!adminUnlocked) return (
-    <div><PinGate onUnlock={() => setAdminUnlocked(true)} adminPin={shared.adminPin} /><PageFooter /></div>
-  );
-
+  if (!adminUnlocked) return <div><PinGate onUnlock={() => setAdminUnlocked(true)} adminPin={shared.adminPin} /><PageFooter /></div>;
   const totalPreds = Object.values(shared.predictions).reduce((a, p) => a + Object.keys(p).length, 0);
-
   return (
     <div>
       <div style={{ padding:"16px 16px" }}>
@@ -469,10 +540,7 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
           <div className="card" style={{ padding:14 }}>
             <div style={{ display:"flex", gap:10 }}>
               <input className="inp" value={nameEdit || shared.poolName} onChange={e => setNameEdit(e.target.value)} placeholder={shared.poolName} />
-              <button className="btn btn-gold btn-sm" style={{ flexShrink:0 }} onClick={() => {
-                if (nameEdit.trim()) persist(s => ({ ...s, poolName: nameEdit.trim() }));
-                setNameEdit(""); showToast("Name updated");
-              }}>Save</button>
+              <button className="btn btn-gold btn-sm" style={{ flexShrink:0 }} onClick={() => { if (nameEdit.trim()) persist(s => ({ ...s, poolName: nameEdit.trim() })); setNameEdit(""); showToast("Name updated"); }}>Save</button>
             </div>
           </div>
         </div>
@@ -486,10 +554,7 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
                   <span style={{ fontSize:18 }}>👤</span>
                   <span style={{ flex:1, fontWeight:500 }}>{p.name}</span>
                   <span style={{ fontSize:11, color:"var(--muted)", marginRight:4 }}>{Object.keys(shared.predictions[p.id] || {}).length} preds</span>
-                  <button className="btn-del" onClick={() => {
-                    persist(s => ({ ...s, participants: s.participants.filter(x => x.id !== p.id) }));
-                    showToast(`${p.name} removed`);
-                  }}>✕</button>
+                  <button className="btn-del" onClick={() => { persist(s => ({ ...s, participants: s.participants.filter(x => x.id !== p.id) })); showToast(`${p.name} removed`); }}>✕</button>
                 </div>
               ))
             }
@@ -498,8 +563,7 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
         <div style={{ marginBottom:14 }}>
           <p className="lbl" style={{ marginBottom:8 }}>Statistics</p>
           <div className="card" style={{ padding:14 }}>
-            {[["Participants", shared.participants.length],["Group matches", shared.matches.length],
-              ["Results entered", completedMatches],["Total predictions", totalPreds]].map(([l, v]) => (
+            {[["Participants", shared.participants.length],["Group matches", shared.matches.length],["Results entered", completedMatches],["Total predictions", totalPreds]].map(([l, v]) => (
               <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:"1px solid var(--bd)" }}>
                 <span style={{ fontSize:13 }}>{l}</span>
                 <span style={{ fontWeight:700, color:"var(--gold)" }}>{v}</span>
@@ -513,7 +577,7 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
   );
 }
 
-// ─── ROOT APP ────────────────────────────────────────────────────────────────
+// ─── ROOT APP ─────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [shared, setShared] = useState(null);
@@ -525,7 +589,6 @@ export default function App() {
   const [activeStage, setActiveStage] = useState("group");
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [toast, setToast] = useState(null);
-  // Secret admin access via URL hash: sridads.com/#admin
   const isAdminUrl = window.location.hash === "#admin";
 
   useEffect(() => {
@@ -540,13 +603,9 @@ export default function App() {
     })();
   }, []);
 
-  // Poll for updates every 30 seconds so standings stay fresh
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!saving) {
-        const data = await loadPool();
-        if (data && data.matches) setShared(data);
-      }
+      if (!saving) { const data = await loadPool(); if (data && data.matches) setShared(data); }
     }, 30000);
     return () => clearInterval(interval);
   }, [saving]);
@@ -561,19 +620,8 @@ export default function App() {
   }, []);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2600); }
-
-  function loginAs(p) {
-    setMe(p);
-    try { sessionStorage.setItem("sri_me", JSON.stringify(p)); } catch {}
-    showToast(`Welcome, ${p.name}! ⚽`);
-    setView("predict");
-  }
-
-  function logout() {
-    setMe(null);
-    try { sessionStorage.removeItem("sri_me"); } catch {}
-    setView("home");
-  }
+  function loginAs(p) { setMe(p); try { sessionStorage.setItem("sri_me", JSON.stringify(p)); } catch {} showToast(`Welcome, ${p.name}! ⚽`); setView("predict"); }
+  function logout() { setMe(null); try { sessionStorage.removeItem("sri_me"); } catch {} setView("home"); }
 
   const leaderboard = useMemo(() => {
     if (!shared) return [];
@@ -592,8 +640,7 @@ export default function App() {
   const totalMatches = shared ? shared.matches.length : 0;
 
   if (loading) return (
-    <div className="app">
-      <style>{CSS}</style>
+    <div className="app"><style>{CSS}</style>
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", gap:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:7 }}>
           <div style={{ width:26, height:26, background:"linear-gradient(135deg,#C9A84C,#8a6a28)", transform:"rotate(45deg)", borderRadius:3 }} />
@@ -606,12 +653,13 @@ export default function App() {
   );
 
   const navItems = [
-    { id:"home", icon:"🏠", label:"Home" },
-    { id:"predict", icon:"✏️", label:"Predict" },
+    { id:"home",        icon:"🏠", label:"Home" },
+    { id:"predict",     icon:"✏️", label:"Predict" },
     { id:"leaderboard", icon:"🏆", label:"Standings" },
-    { id:"rules", icon:"📋", label:"Rules" },
-    { id:"results", icon:"📝", label:"Scores", hidden: !isAdminUrl },
-    { id:"admin", icon:"⚙️", label:"Admin", hidden: !isAdminUrl },
+    { id:"schedule",    icon:"📅", label:"Schedule" },
+    { id:"rules",       icon:"📋", label:"Rules" },
+    { id:"results",     icon:"📝", label:"Scores",  hidden: !isAdminUrl },
+    { id:"admin",       icon:"⚙️", label:"Admin",   hidden: !isAdminUrl },
   ].filter(n => !n.hidden);
 
   const sp = { shared, persist, me, setView, showToast };
@@ -624,6 +672,7 @@ export default function App() {
       {view === "join"        && <JoinView {...sp} loginAs={loginAs} />}
       {view === "predict"     && <PredictView {...sp} logout={logout} activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeStage={activeStage} setActiveStage={setActiveStage} />}
       {view === "leaderboard" && <LeaderboardView leaderboard={leaderboard} shared={shared} />}
+      {view === "schedule"    && <ScheduleView shared={shared} />}
       {view === "rules"       && <RulesView />}
       {view === "results"     && <ResultsView {...sp} activeGroup={activeGroup} setActiveGroup={setActiveGroup} activeStage={activeStage} setActiveStage={setActiveStage} adminUnlocked={adminUnlocked} setAdminUnlocked={setAdminUnlocked} />}
       {view === "admin"       && <AdminView {...sp} adminUnlocked={adminUnlocked} setAdminUnlocked={setAdminUnlocked} completedMatches={completedMatches} />}
