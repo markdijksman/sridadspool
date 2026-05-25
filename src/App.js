@@ -494,8 +494,8 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                     const awayVal = pred.awayTeam || "";
                     const homeIsAuto = !pred.homeTeam && !!sug.home;
                     const awayIsAuto = !pred.awayTeam && !!sug.away;
-                    function setHomeTeam(val) { persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...pred, homeTeam: val } } } })); }
-                    function setAwayTeam(val) { persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...pred, awayTeam: val } } } })); }
+                    function setHomeTeam(val) { persist(s => { const cur = (s.predictions[me.id]||{})[m.id]||{}; return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...cur, homeTeam: val } } } }; }); }
+                    function setAwayTeam(val) { persist(s => { const cur = (s.predictions[me.id]||{})[m.id]||{}; return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...cur, awayTeam: val } } } }; }); }
                     return (
                       <div key={m.id} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid var(--bd)", borderRadius:12, padding:"12px 14px" }}>
                         <p style={{ fontSize:10, color:"var(--gold)", fontWeight:600, marginBottom:10 }}>{m.label}</p>
@@ -517,9 +517,15 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                           )}
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                          <input type="number" min="0" max="20" inputMode="numeric" className={`sbox ${pred.homeGoals !== undefined ? "filled" : ""}`} value={pred.homeGoals ?? ""} disabled={locked} onChange={e => updatePred(m.id, e.target.value, pred.awayGoals ?? "")} />
+                          <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
+                            className={`sbox ${pred.homeGoals !== undefined && pred.homeGoals !== "" ? "filled" : ""}`}
+                            value={pred.homeGoals ?? ""} disabled={locked}
+                            onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); updatePred(m.id, v, pred.awayGoals ?? ""); }} />
                           <span style={{ color:"var(--muted)", fontWeight:700, fontSize:16 }}>–</span>
-                          <input type="number" min="0" max="20" inputMode="numeric" className={`sbox ${pred.awayGoals !== undefined ? "filled" : ""}`} value={pred.awayGoals ?? ""} disabled={locked} onChange={e => updatePred(m.id, pred.homeGoals ?? "", e.target.value)} />
+                          <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
+                            className={`sbox ${pred.awayGoals !== undefined && pred.awayGoals !== "" ? "filled" : ""}`}
+                            value={pred.awayGoals ?? ""} disabled={locked}
+                            onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); updatePred(m.id, pred.homeGoals ?? "", v); }} />
                           {pts !== null && <Pts pts={pts} />}
                           {m.result && <span style={{ fontSize:11, color:"var(--muted)" }}>{m.result.homeGoals}–{m.result.awayGoals}</span>}
                         </div>
