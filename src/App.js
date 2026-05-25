@@ -931,6 +931,7 @@ function RulesView() {
     { icon:"🏆", title:"World Champion bonus — 15 points", body:"Pick the team that lifts the trophy. If you're right → 15 bonus points added at the end. Enough to shake up the leaderboard, but not enough to overcome a strong group stage." },
     { icon:"🥈", title:"Runner-up bonus — 5 points", body:"In your Final prediction, pick the team that finishes runner-up. Correct → 5 bonus points." },
     { icon:"⚖️", title:"Tiebreaker", body:"Equal points? Most exact scores wins. Still tied? Most correct outcomes. Still tied? Earliest sign-up." },
+    { icon:"⏱️", title:"Knockout draws — 90 minutes counts", body:"In the knockout phase, your predicted score is judged on the result after 90 minutes only. If you predict 2–2 and it ends 2–2 after 90 minutes, you get full points — regardless of extra time or penalties. Your team winner prediction is judged on who ultimately progresses." },
     { icon:"🔒", title:"Predictions lock at kickoff", body:"Group stage predictions lock when Mexico vs South Africa kicks off on Thu 11 Jun at 23:00 Dubai time. Fill them in before then!" },
     { icon:"🤝", title:"Fair play", body:"This pool is for fun among the SRI Dads community. No financial stakes. All disputes settled by the pool organiser — their decision is final." },
   ];
