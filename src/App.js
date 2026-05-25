@@ -322,22 +322,45 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   );
 
   const myPreds = shared.predictions[me.id] || {};
-  const filled = Object.values(myPreds).filter(p => p.homeGoals !== "" && p.awayGoals !== "").length;
+
+  // Fix: check both homeGoals AND awayGoals are non-empty strings or valid numbers
+  function isPredFilled(p) {
+    if (!p) return false;
+    const hg = p.homeGoals, ag = p.awayGoals;
+    return hg !== undefined && hg !== "" && hg !== null &&
+           ag !== undefined && ag !== "" && ag !== null;
+  }
+
+  const filled = shared.matches.filter(m => isPredFilled(myPreds[m.id])).length;
   const totalGroupMatches = shared.matches.length;
   const groupMatches = shared.matches.filter(m => m.group === activeGroup);
   const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
 
   function groupProgress(g) {
     const matches = shared.matches.filter(m => m.group === g);
-    const done = matches.filter(m => myPreds[m.id]?.homeGoals !== undefined && myPreds[m.id]?.awayGoals !== undefined).length;
+    const done = matches.filter(m => isPredFilled(myPreds[m.id])).length;
     return { done, total: matches.length };
   }
+
+  // Check if user has filled any knockout predictions (to show warning on group change)
+  const hasKnockoutPreds = shared.knockoutMatches.some(m => myPreds[m.id]?.homeTeam || myPreds[m.id]?.homeGoals !== undefined);
 
   const knockoutPreds = {};
   shared.knockoutMatches.forEach(m => { if (myPreds[m.id]) knockoutPreds[m.id] = myPreds[m.id]; });
   const suggested = inferKnockoutBracket(shared.matches, knockoutPreds, myPreds, {});
 
+  // Check if all knockout + champion filled for completion card
+  const allGroupFilled = filled === totalGroupMatches;
+  const allKnockoutFilled = shared.knockoutMatches.every(m => myPreds[m.id]?.homeGoals !== undefined && myPreds[m.id]?.awayGoals !== undefined);
+  const championPicked = !!shared.champions[me.id];
+  const allDone = allGroupFilled && allKnockoutFilled && championPicked;
+
   function updatePred(matchId, hg, ag) {
+    // Check if this is a group match and user has knockout preds — show warning
+    const isGroupMatch = shared.matches.find(m => m.id === matchId);
+    if (isGroupMatch && hasKnockoutPreds) {
+      showToast("⚠️ Group changed — check your Knockout predictions!");
+    }
     persist(s => {
       const newState = { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: { homeGoals: hg, awayGoals: ag } } } };
       const match = [...s.matches, ...s.knockoutMatches].find(m => m.id === matchId);
@@ -433,9 +456,16 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                 disabled={groupKeys.indexOf(activeGroup) === groupKeys.length - 1}
                 onClick={() => setActiveGroup(groupKeys[groupKeys.indexOf(activeGroup) + 1])}
                 style={{ opacity: groupKeys.indexOf(activeGroup) === groupKeys.length - 1 ? 0.3 : 1 }}>
-                Group {groupKeys[groupKeys.indexOf(activeGroup) + 1] || ""} →
+                {groupKeys.indexOf(activeGroup) === groupKeys.length - 2 ? "Group L →" : `Group ${groupKeys[groupKeys.indexOf(activeGroup) + 1] || ""} →`}
               </button>
             </div>
+            {/* Last group — show Continue to Knockout */}
+            {activeGroup === groupKeys[groupKeys.length - 1] && (
+              <button className="btn btn-gold" style={{ width:"100%", marginTop:12, fontSize:15 }}
+                onClick={() => setActiveStage("knockout")}>
+                Continue to Knockout Predictions →
+              </button>
+            )}
           </div>
         )}
         {activeStage === "knockout" && (
@@ -453,8 +483,10 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                     const locked = !!m.result;
                     const eligible = getEligibleTeams(m.id);
                     const sug = suggested[m.id] || {};
-                    const homeVal = pred.homeTeam || sug.home || "";
-                    const awayVal = pred.awayTeam || sug.away || "";
+                    // IMPORTANT: only use pred.homeTeam as select value — never auto-fill with suggestion
+                    // suggestion is shown as a hint only, never written to state automatically
+                    const homeVal = pred.homeTeam || "";
+                    const awayVal = pred.awayTeam || "";
                     const homeIsAuto = !pred.homeTeam && !!sug.home;
                     const awayIsAuto = !pred.awayTeam && !!sug.away;
                     function setHomeTeam(val) { persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...pred, homeTeam: val } } } })); }
@@ -474,7 +506,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                             </div>
                           ) : (
                             <select className="inp" value={homeVal} style={{ borderColor: pred.homeTeam ? "var(--ok)" : homeIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setHomeTeam(e.target.value)}>
-                              <option value="">Select team...</option>
+                              <option value="">{homeIsAuto ? `✨ Suggested: ${sug.home}` : "Select team..."}</option>
                               {eligible.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
                           )}
@@ -498,7 +530,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                             </div>
                           ) : (
                             <select className="inp" value={awayVal} style={{ borderColor: pred.awayTeam ? "var(--ok)" : awayIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setAwayTeam(e.target.value)}>
-                              <option value="">Select team...</option>
+                              <option value="">{awayIsAuto ? `✨ Suggested: ${sug.away}` : "Select team..."}</option>
                               {eligible.filter(t => t !== homeVal).map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
                           )}
@@ -517,6 +549,29 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
               </select>
               {shared.champions[me.id] && <p style={{ marginTop:8, fontSize:12, color:"var(--muted)" }}>Your pick: {FLAGS[shared.champions[me.id]]} <strong style={{ color:"var(--text)" }}>{shared.champions[me.id]}</strong></p>}
             </div>
+
+            {/* Completion card */}
+            {allDone && (
+              <div style={{ marginTop:16, background:"linear-gradient(135deg,rgba(61,170,110,0.15),rgba(61,170,110,0.05))", border:"2px solid var(--ok)", borderRadius:16, padding:"20px 18px", textAlign:"center" }}>
+                <div style={{ fontSize:48, marginBottom:8 }}>🎉</div>
+                <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, color:"var(--ok)", marginBottom:8 }}>You're all done!</p>
+                <p style={{ fontSize:13, color:"var(--muted)", marginBottom:16 }}>All predictions submitted. Good luck!</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:6, textAlign:"left" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                    <span style={{ fontSize:13, color:"var(--muted)" }}>Group stage</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"var(--ok)" }}>{filled}/{totalGroupMatches} ✅</span>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                    <span style={{ fontSize:13, color:"var(--muted)" }}>Knockout rounds</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"var(--ok)" }}>{shared.knockoutMatches.length}/{shared.knockoutMatches.length} ✅</span>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0" }}>
+                    <span style={{ fontSize:13, color:"var(--muted)" }}>🏆 World Champion</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"var(--gold)" }}>{FLAGS[shared.champions[me.id]]} {shared.champions[me.id]}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1163,7 +1218,12 @@ export default function App() {
 
   // Count incomplete group predictions for nav badge
   const myGroupPreds = me ? (shared?.predictions[me.id] || {}) : {};
-  const incompleteCount = me ? shared?.matches.filter(m => !myGroupPreds[m.id]?.homeGoals && myGroupPreds[m.id]?.homeGoals !== 0).length : 0;
+  const incompleteCount = me ? shared?.matches.filter(m => {
+    const p = myGroupPreds[m.id];
+    if (!p) return true;
+    const hg = p.homeGoals, ag = p.awayGoals;
+    return !(hg !== undefined && hg !== "" && hg !== null && ag !== undefined && ag !== "" && ag !== null);
+  }).length : 0;
 
   async function handleRefreshLeaderboard() {
     const data = await loadPool();
