@@ -356,13 +356,15 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   const allDone = allGroupFilled && allKnockoutFilled && championPicked;
 
   function updatePred(matchId, hg, ag) {
-    // Check if this is a group match and user has knockout preds — show warning
     const isGroupMatch = shared.matches.find(m => m.id === matchId);
     if (isGroupMatch && hasKnockoutPreds) {
       showToast("⚠️ Group changed — check your Knockout predictions!");
     }
     persist(s => {
-      const newState = { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: { homeGoals: hg, awayGoals: ag } } } };
+      const existingPred = (s.predictions[me.id] || {})[matchId] || {};
+      // IMPORTANT: merge with existing pred to preserve homeTeam/awayTeam
+      const newPred = { ...existingPred, homeGoals: hg, awayGoals: ag };
+      const newState = { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: newPred } } };
       const match = [...s.matches, ...s.knockoutMatches].find(m => m.id === matchId);
       if (match?.result) {
         const pts = calcPts({ homeGoals: hg, awayGoals: ag }, match.result, match.stage || "group");
@@ -390,7 +392,10 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
           <div>
             <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"var(--gold)" }}>✏️ My Predictions</p>
-            <p style={{ color:"var(--muted)", fontSize:12 }}>{me.name} · {filled}/{totalGroupMatches} group matches filled</p>
+            <p style={{ color:"var(--muted)", fontSize:12 }}>
+              {me.name} · {filled}/{totalGroupMatches} group
+              {" · "}{shared.knockoutMatches.filter(m => isPredFilled(myPreds[m.id])).length}/{shared.knockoutMatches.length} knockout
+            </p>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={logout}>Log out</button>
         </div>
@@ -1168,7 +1173,14 @@ export default function App() {
   }, []);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2600); }
-  function loginAs(p) { setMe(p); try { sessionStorage.setItem("sri_me", JSON.stringify(p)); } catch {} showToast(`Welcome, ${p.name}! ⚽`); setView("predict"); }
+  function loginAs(p) {
+    setMe(p);
+    setActiveGroup("A");
+    setActiveStage("group");
+    try { sessionStorage.setItem("sri_me", JSON.stringify(p)); } catch {}
+    showToast(`Welcome, ${p.name}! ⚽`);
+    setView("predict");
+  }
   function logout() { setMe(null); try { sessionStorage.removeItem("sri_me"); } catch {} setView("home"); }
 
   const leaderboard = useMemo(() => {
