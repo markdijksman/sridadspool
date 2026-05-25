@@ -46,7 +46,7 @@ export function TeamBadge({ team, right }) {
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12, flexDirection: right ? "row-reverse" : "row" }}>
       <span style={{ fontSize:15 }}>{flag}</span>
-      <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:76 }}>{team}</span>
+      <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:110 }}>{team}</span>
     </span>
   );
 }
