@@ -116,10 +116,11 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
   const awayRef = useRef(null);
 
   function handleHomeChange(e) {
-    const val = e.target.value;
+    const val = e.target.value.replace(/[^0-9]/g, "");
     onUpdate && onUpdate(match.id, val, pred.awayGoals ?? "");
-    // Auto-jump to away field after entering a digit
-    if (val !== "") setTimeout(() => awayRef.current?.focus(), 50);
+    if (val.length === 1) {
+      setTimeout(() => awayRef.current?.focus(), 80);
+    }
   }
 
   return (
@@ -137,19 +138,22 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
           <input
-            type="number" min="0" max="20" inputMode="numeric"
+            type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
             className={`sbox ${filled ? "filled" : ""}`}
             value={pred.homeGoals ?? ""}
             disabled={locked || match.home === "TBD" || (isKnockout && !FLAGS[match.home])}
             onChange={handleHomeChange} />
           <span style={{ color:"var(--muted)", fontWeight:700, fontSize:14 }}>–</span>
           <input
-            type="number" min="0" max="20" inputMode="numeric"
+            type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
             ref={awayRef}
             className={`sbox ${filled ? "filled" : ""}`}
             value={pred.awayGoals ?? ""}
             disabled={locked || match.away === "TBD" || (isKnockout && !FLAGS[match.away])}
-            onChange={e => onUpdate && onUpdate(match.id, pred.homeGoals ?? "", e.target.value)} />
+            onChange={e => {
+              const val = e.target.value.replace(/[^0-9]/g, "");
+              onUpdate && onUpdate(match.id, pred.homeGoals ?? "", val);
+            }} />
         </div>
         <div style={{ flex:1 }}>
           <TeamBadge team={isKnockout && !FLAGS[match.away] ? "TBD" : match.away} />
@@ -179,14 +183,14 @@ export function AdminMatchRow({ match, onSave }) {
       <div className={`mrow ${match.result ? "played" : ""}`}>
         <div style={{ flex:1, textAlign:"right" }}><TeamBadge team={match.home} right /></div>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <input type="number" min="0" max="20" inputMode="numeric"
+          <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
             className={`sbox ${match.result ? "filled" : ""}`}
-            value={hg} onChange={e => { setHg(e.target.value); if (e.target.value !== "") setTimeout(() => awayRef.current?.focus(), 50); }} />
+            value={hg} onChange={e => { const v=e.target.value.replace(/[^0-9]/g,""); setHg(v); if (v.length===1) setTimeout(()=>awayRef.current?.focus(),80); }} />
           <span style={{ color:"var(--muted)", fontWeight:700 }}>–</span>
-          <input type="number" min="0" max="20" inputMode="numeric"
+          <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
             ref={awayRef}
             className={`sbox ${match.result ? "filled" : ""}`}
-            value={ag} onChange={e => setAg(e.target.value)} />
+            value={ag} onChange={e => setAg(e.target.value.replace(/[^0-9]/g,""))} />
         </div>
         <div style={{ flex:1 }}><TeamBadge team={match.away} /></div>
         <button className="btn btn-gold btn-sm" style={{ flexShrink:0 }}
