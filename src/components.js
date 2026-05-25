@@ -1,21 +1,11 @@
-import React, { useState } from 'react';
-import { FLAGS } from './data';
+import React, { useState, useRef } from 'react';
+import { FLAGS, calcPts } from './data';
 import { LEGAL_TEXT } from './styles';
-import { calcPts } from './data';
 
 export function SriDadsLogo({ size = 40 }) {
   return (
-    <div style={{
-      width:size, height:size, flexShrink:0, borderRadius:size*0.12,
-      overflow:"hidden", background:"#012148"
-    }}>
-      <img
-        src="/logo.png"
-        alt="GEMS SRI Football Dad's Club"
-        width={size}
-        height={size}
-        style={{ objectFit:"cover", display:"block" }}
-      />
+    <div style={{ width:size, height:size, flexShrink:0, borderRadius:size*0.12, overflow:"hidden", background:"#012148" }}>
+      <img src="/logo.png" alt="GEMS SRI Football Dad's Club" width={size} height={size} style={{ objectFit:"cover", display:"block" }} />
     </div>
   );
 }
@@ -34,10 +24,9 @@ export function Wordmark() {
 
 export function TopBar({ saving, syncStatus, lastSync }) {
   const syncLabel = syncStatus === 'syncing' ? '🔄 Syncing scores...'
-    : syncStatus === 'ok' ? `✅ Scores live`
+    : syncStatus === 'ok' ? '✅ Scores live'
     : syncStatus === 'error' ? '⚠️ Sync error'
     : null;
-
   return (
     <div className="topbar">
       <Wordmark />
@@ -45,9 +34,7 @@ export function TopBar({ saving, syncStatus, lastSync }) {
         <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontWeight:400, fontSize:15, color:"var(--text)", letterSpacing:"1px" }}>World Cup Pool 2026</p>
         {saving && <p style={{ fontSize:9, color:"var(--muted)" }}>Saving <span className="spin">⚽</span></p>}
         {syncLabel && !saving && (
-          <p style={{ fontSize:9, color: syncStatus === 'error' ? "var(--danger)" : syncStatus === 'ok' ? "var(--ok)" : "var(--muted)" }}>
-            {syncLabel}
-          </p>
+          <p style={{ fontSize:9, color: syncStatus === 'error' ? "var(--danger)" : syncStatus === 'ok' ? "var(--ok)" : "var(--muted)" }}>{syncLabel}</p>
         )}
       </div>
     </div>
@@ -57,18 +44,19 @@ export function TopBar({ saving, syncStatus, lastSync }) {
 export function TeamBadge({ team, right }) {
   const flag = FLAGS[team] || "🏳️";
   return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12,
-      flexDirection: right ? "row-reverse" : "row" }}>
+    <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12, flexDirection: right ? "row-reverse" : "row" }}>
       <span style={{ fontSize:15 }}>{flag}</span>
       <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:76 }}>{team}</span>
     </span>
   );
 }
 
-export function Pts({ pts }) {
-  if (pts === 3) return <span className="bx-exact">+3 ⭐</span>;
-  if (pts === 1) return <span className="bx-ok">+1 ✓</span>;
-  return <span className="bx-miss">0</span>;
+export function Pts({ pts, stage }) {
+  // pts already has multiplier applied
+  if (pts <= 0) return <span className="bx-miss">0</span>;
+  const isExact = pts % 3 === 0 && pts > 0;
+  if (isExact) return <span className="bx-exact">+{pts} ⭐</span>;
+  return <span className="bx-ok">+{pts} ✓</span>;
 }
 
 export function Pbar({ value, max }) {
@@ -80,17 +68,14 @@ export function LegalBox() {
   const [open, setOpen] = useState(false);
   return (
     <div className="legal">
-      <p style={{ fontWeight:700, fontSize:12, color:"rgba(201,168,76,0.7)", marginBottom:6, letterSpacing:"0.5px" }}>
-        ⚖️ LEGAL NOTICE — UAE COMPLIANCE
-      </p>
+      <p style={{ fontWeight:700, fontSize:12, color:"rgba(201,168,76,0.7)", marginBottom:6, letterSpacing:"0.5px" }}>⚖️ LEGAL NOTICE — UAE COMPLIANCE</p>
       <p style={{ marginBottom:8 }}>
         This is a <strong style={{ color:"var(--text)" }}>free-to-play, no-prize, skill-based prediction game</strong>.
         No money changes hands. No financial benefit is gained by any participant.
         This activity does not constitute gambling or wagering under UAE law.
       </p>
       <button onClick={() => setOpen(v => !v)}
-        style={{ background:"none", border:"none", color:"var(--gold)", cursor:"pointer",
-          fontSize:11, padding:0, fontFamily:"Inter,sans-serif", textDecoration:"underline" }}>
+        style={{ background:"none", border:"none", color:"var(--gold)", cursor:"pointer", fontSize:11, padding:0, fontFamily:"Inter,sans-serif", textDecoration:"underline" }}>
         {open ? "Hide full legal text ▲" : "Read full legal disclaimer ▼"}
       </button>
       {open && <p style={{ marginTop:10, whiteSpace:"pre-line" }}>{LEGAL_TEXT}</p>}
@@ -101,7 +86,6 @@ export function LegalBox() {
 export function PageFooter() {
   return (
     <div style={{ padding:"20px 16px 108px" }}>
-      {/* WhatsApp share button */}
       <a href={`https://wa.me/?text=${encodeURIComponent("⚽ Join our World Cup 2026 Pool!\n\nSign up and predict match scores to compete with the other SRI Dads.\n\n🔗 www.sridads.com\n\nMay the best dad win! 🏆")}`}
         target="_blank" rel="noopener noreferrer"
         style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, background:"#25D366", borderRadius:12, padding:"13px 20px", color:"#fff", fontWeight:700, fontSize:14, textDecoration:"none", boxShadow:"0 4px 16px rgba(37,211,102,0.25)", marginBottom:14 }}>
@@ -122,13 +106,24 @@ export function PageFooter() {
 
 export function MatchRow({ match, myPred, onUpdate, showResult }) {
   const pred = myPred || {};
-  const filled = pred.homeGoals !== undefined && pred.awayGoals !== undefined;
-  const pts = match.result ? calcPts(pred, match.result) : null;
+  // Fix: properly check both values are filled (handles 0 as valid score)
+  const filled = pred.homeGoals !== undefined && pred.homeGoals !== "" && pred.homeGoals !== null
+               && pred.awayGoals !== undefined && pred.awayGoals !== "" && pred.awayGoals !== null;
+  const stage = match.stage || (match.group ? "group" : "Round of 32");
+  const pts = match.result ? calcPts(pred, match.result, stage) : null;
   const locked = !!match.result;
   const isKnockout = !match.group;
+  const awayRef = useRef(null);
+
+  function handleHomeChange(e) {
+    const val = e.target.value;
+    onUpdate && onUpdate(match.id, val, pred.awayGoals ?? "");
+    // Auto-jump to away field after entering a digit
+    if (val !== "") setTimeout(() => awayRef.current?.focus(), 50);
+  }
+
   return (
     <div style={{ marginBottom:2 }}>
-      {/* Date / time / venue */}
       {(match.date || match.label) && (
         <div style={{ display:"flex", justifyContent:"space-between", padding:"2px 4px 4px", fontSize:10, color:"var(--muted)" }}>
           <span>{match.label || match.date}</span>
@@ -141,13 +136,16 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
           <TeamBadge team={isKnockout && !FLAGS[match.home] ? "TBD" : match.home} right />
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <input type="number" min="0" max="20"
+          <input
+            type="number" min="0" max="20" inputMode="numeric"
             className={`sbox ${filled ? "filled" : ""}`}
             value={pred.homeGoals ?? ""}
             disabled={locked || match.home === "TBD" || (isKnockout && !FLAGS[match.home])}
-            onChange={e => onUpdate && onUpdate(match.id, e.target.value, pred.awayGoals ?? "")} />
+            onChange={handleHomeChange} />
           <span style={{ color:"var(--muted)", fontWeight:700, fontSize:14 }}>–</span>
-          <input type="number" min="0" max="20"
+          <input
+            type="number" min="0" max="20" inputMode="numeric"
+            ref={awayRef}
             className={`sbox ${filled ? "filled" : ""}`}
             value={pred.awayGoals ?? ""}
             disabled={locked || match.away === "TBD" || (isKnockout && !FLAGS[match.away])}
@@ -168,6 +166,7 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
 export function AdminMatchRow({ match, onSave }) {
   const [hg, setHg] = useState(match.result?.homeGoals ?? "");
   const [ag, setAg] = useState(match.result?.awayGoals ?? "");
+  const awayRef = useRef(null);
   return (
     <div style={{ marginBottom:2 }}>
       {(match.date || match.label) && (
@@ -180,10 +179,13 @@ export function AdminMatchRow({ match, onSave }) {
       <div className={`mrow ${match.result ? "played" : ""}`}>
         <div style={{ flex:1, textAlign:"right" }}><TeamBadge team={match.home} right /></div>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <input type="number" min="0" max="20" className={`sbox ${match.result ? "filled" : ""}`}
-            value={hg} onChange={e => setHg(e.target.value)} />
+          <input type="number" min="0" max="20" inputMode="numeric"
+            className={`sbox ${match.result ? "filled" : ""}`}
+            value={hg} onChange={e => { setHg(e.target.value); if (e.target.value !== "") setTimeout(() => awayRef.current?.focus(), 50); }} />
           <span style={{ color:"var(--muted)", fontWeight:700 }}>–</span>
-          <input type="number" min="0" max="20" className={`sbox ${match.result ? "filled" : ""}`}
+          <input type="number" min="0" max="20" inputMode="numeric"
+            ref={awayRef}
+            className={`sbox ${match.result ? "filled" : ""}`}
             value={ag} onChange={e => setAg(e.target.value)} />
         </div>
         <div style={{ flex:1 }}><TeamBadge team={match.away} /></div>
@@ -203,8 +205,7 @@ export function PinGate({ onUnlock, adminPin }) {
   }
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"60px 24px", gap:18 }}>
-      <div style={{ width:60, height:60, borderRadius:"50%", background:"var(--gold-pale)",
-        border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>🔐</div>
+      <div style={{ width:60, height:60, borderRadius:"50%", background:"var(--gold-pale)", border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>🔐</div>
       <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontWeight:700, fontSize:20, color:"var(--text)" }}>Admin Access</p>
       <input type="password" inputMode="numeric" className="pin-inp" maxLength={4}
         value={pin} placeholder="••••"
