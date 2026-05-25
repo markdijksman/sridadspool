@@ -1,50 +1,50 @@
 // ─── KNOCKOUT BRACKET LOGIC ───────────────────────────────────────────────────
-// Official FIFA 2026 bracket with smart dropdowns per match slot
+// IDs must match KNOCKOUT_TEMPLATE in data.js exactly
 
 import { GROUPS_2026 } from './data';
 
-// Teams per group (for dropdowns)
 const G = GROUPS_2026;
 
-// Round of 32 — official FIFA bracket (from wikipedia)
-// Each slot: { id, label, homePossible: [teams], awayPossible: [teams] }
+// R32_BRACKET — IDs match data.js KNOCKOUT_TEMPLATE
+// r32_1=1A vs 2B, r32_2=1C vs 2D, r32_3=1E vs 2F, r32_4=1G vs 2H
+// r32_5=1I vs 2J, r32_6=1K vs 2L, r32_7=1B vs 2A, r32_8=1D vs 2C
+// r32_9=1F vs 2E, r32_10=1H vs 2G, r32_11=1J vs 2I, r32_12=1L vs 2K
+// r32_13..16 = Best 3rd place slots
 export const R32_BRACKET = [
-  // Fixed 1st vs 2nd matchups
-  { id:"r32_1",  label:"Match 73 · 2A vs 2B",        home: G.A, away: G.B },
-  { id:"r32_2",  label:"Match 74 · 1E vs Best 3rd",   home: G.E, away: [...G.A,...G.B,...G.C,...G.D,...G.F] },
-  { id:"r32_3",  label:"Match 75 · 1F vs 2C",         home: G.F, away: G.C },
-  { id:"r32_4",  label:"Match 76 · 1C vs 2F",         home: G.C, away: G.F },
-  { id:"r32_5",  label:"Match 77 · 1I vs Best 3rd",   home: G.I, away: [...G.C,...G.D,...G.F,...G.G,...G.H] },
-  { id:"r32_6",  label:"Match 78 · 2E vs 2I",         home: G.E, away: G.I },
-  { id:"r32_7",  label:"Match 79 · 1A vs Best 3rd",   home: G.A, away: [...G.C,...G.E,...G.F,...G.H,...G.I] },
-  { id:"r32_8",  label:"Match 80 · 1L vs Best 3rd",   home: G.L, away: [...G.E,...G.H,...G.I,...G.J,...G.K] },
-  { id:"r32_9",  label:"Match 81 · 1D vs Best 3rd",   home: G.D, away: [...G.B,...G.E,...G.F,...G.I,...G.J] },
-  { id:"r32_10", label:"Match 82 · 1G vs Best 3rd",   home: G.G, away: [...G.A,...G.E,...G.H,...G.I,...G.J] },
-  { id:"r32_11", label:"Match 83 · 2K vs 2L",         home: G.K, away: G.L },
-  { id:"r32_12", label:"Match 84 · 1H vs 2J",         home: G.H, away: G.J },
-  { id:"r32_13", label:"Match 85 · 1B vs Best 3rd",   home: G.B, away: [...G.E,...G.F,...G.G,...G.I,...G.J] },
-  { id:"r32_14", label:"Match 86 · 1J vs 2H",         home: G.J, away: G.H },
-  { id:"r32_15", label:"Match 87 · 1K vs Best 3rd",   home: G.K, away: [...G.D,...G.E,...G.I,...G.J,...G.L] },
-  { id:"r32_16", label:"Match 88 · 2D vs 2G",         home: G.D, away: G.G },
+  { id:"r32_1",  label:"1A vs 2B",     home: G.A, away: G.B },
+  { id:"r32_2",  label:"1C vs 2D",     home: G.C, away: G.D },
+  { id:"r32_3",  label:"1E vs 2F",     home: G.E, away: G.F },
+  { id:"r32_4",  label:"1G vs 2H",     home: G.G, away: G.H },
+  { id:"r32_5",  label:"1I vs 2J",     home: G.I, away: G.J },
+  { id:"r32_6",  label:"1K vs 2L",     home: G.K, away: G.L },
+  { id:"r32_7",  label:"1B vs 2A",     home: G.B, away: G.A },
+  { id:"r32_8",  label:"1D vs 2C",     home: G.D, away: G.C },
+  { id:"r32_9",  label:"1F vs 2E",     home: G.F, away: G.E },
+  { id:"r32_10", label:"1H vs 2G",     home: G.H, away: G.G },
+  { id:"r32_11", label:"1J vs 2I",     home: G.J, away: G.I },
+  { id:"r32_12", label:"1L vs 2K",     home: G.L, away: G.K },
+  { id:"r32_13", label:"3rd best (1)", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F], away: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
+  { id:"r32_14", label:"3rd best (2)", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F], away: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
+  { id:"r32_15", label:"3rd best (3)", home: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F] },
+  { id:"r32_16", label:"3rd best (4)", home: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F] },
 ];
 
-// Round of 16 — winners of R32 pairs
 export const R16_BRACKET = [
-  { id:"r16_1", label:"R16 M1 · W73 vs W74",   homeR32:"r32_1",  awayR32:"r32_2"  },
-  { id:"r16_2", label:"R16 M2 · W75 vs W76",   homeR32:"r32_3",  awayR32:"r32_4"  },
-  { id:"r16_3", label:"R16 M3 · W77 vs W78",   homeR32:"r32_5",  awayR32:"r32_6"  },
-  { id:"r16_4", label:"R16 M4 · W79 vs W80",   homeR32:"r32_7",  awayR32:"r32_8"  },
-  { id:"r16_5", label:"R16 M5 · W81 vs W82",   homeR32:"r32_9",  awayR32:"r32_10" },
-  { id:"r16_6", label:"R16 M6 · W83 vs W84",   homeR32:"r32_11", awayR32:"r32_12" },
-  { id:"r16_7", label:"R16 M7 · W85 vs W86",   homeR32:"r32_13", awayR32:"r32_14" },
-  { id:"r16_8", label:"R16 M8 · W87 vs W88",   homeR32:"r32_15", awayR32:"r32_16" },
+  { id:"r16_1", label:"W(1A/2B) vs W(1C/2D)",  homeR32:"r32_1",  awayR32:"r32_2"  },
+  { id:"r16_2", label:"W(1E/2F) vs W(1G/2H)",  homeR32:"r32_3",  awayR32:"r32_4"  },
+  { id:"r16_3", label:"W(1I/2J) vs W(1K/2L)",  homeR32:"r32_5",  awayR32:"r32_6"  },
+  { id:"r16_4", label:"W(1B/2A) vs W(1D/2C)",  homeR32:"r32_7",  awayR32:"r32_8"  },
+  { id:"r16_5", label:"W(1F/2E) vs W(1H/2G)",  homeR32:"r32_9",  awayR32:"r32_10" },
+  { id:"r16_6", label:"W(1J/2I) vs W(1L/2K)",  homeR32:"r32_11", awayR32:"r32_12" },
+  { id:"r16_7", label:"W(3rd#1) vs W(3rd#2)",  homeR32:"r32_13", awayR32:"r32_14" },
+  { id:"r16_8", label:"W(3rd#3) vs W(3rd#4)",  homeR32:"r32_15", awayR32:"r32_16" },
 ];
 
 export const QF_BRACKET = [
-  { id:"qf_1", label:"QF1 · W R16M1 vs W R16M2", homeR16:"r16_1", awayR16:"r16_2" },
-  { id:"qf_2", label:"QF2 · W R16M3 vs W R16M4", homeR16:"r16_3", awayR16:"r16_4" },
-  { id:"qf_3", label:"QF3 · W R16M5 vs W R16M6", homeR16:"r16_5", awayR16:"r16_6" },
-  { id:"qf_4", label:"QF4 · W R16M7 vs W R16M8", homeR16:"r16_7", awayR16:"r16_8" },
+  { id:"qf_1", label:"QF1 · W R16-1 vs W R16-2", homeR16:"r16_1", awayR16:"r16_2" },
+  { id:"qf_2", label:"QF2 · W R16-3 vs W R16-4", homeR16:"r16_3", awayR16:"r16_4" },
+  { id:"qf_3", label:"QF3 · W R16-5 vs W R16-6", homeR16:"r16_5", awayR16:"r16_6" },
+  { id:"qf_4", label:"QF4 · W R16-7 vs W R16-8", homeR16:"r16_7", awayR16:"r16_8" },
 ];
 
 export const SF_BRACKET = [
@@ -52,143 +52,109 @@ export const SF_BRACKET = [
   { id:"sf_2", label:"SF2 · W QF3 vs W QF4", homeQF:"qf_3", awayQF:"qf_4" },
 ];
 
-// Get eligible teams for a knockout slot based on which R32 matches feed into it
-export function getEligibleTeams(slotId, r32bracket = R32_BRACKET, r16bracket = R16_BRACKET, qfBracket = QF_BRACKET) {
-  // R32 slots — direct group teams
-  const r32 = r32bracket.find(m => m.id === slotId);
+// Get eligible teams for a knockout slot
+export function getEligibleTeams(slotId) {
+  const r32 = R32_BRACKET.find(m => m.id === slotId);
   if (r32) return [...new Set([...r32.home, ...r32.away])].sort();
 
-  // R16 slots — teams from both feeding R32 matches
-  const r16 = r16bracket.find(m => m.id === slotId);
+  const r16 = R16_BRACKET.find(m => m.id === slotId);
   if (r16) {
-    const homeR32 = r32bracket.find(m => m.id === r16.homeR32);
-    const awayR32 = r32bracket.find(m => m.id === r16.awayR32);
-    const teams = [...(homeR32?.home||[]), ...(homeR32?.away||[]), ...(awayR32?.home||[]), ...(awayR32?.away||[])];
-    return [...new Set(teams)].sort();
+    const hr32 = R32_BRACKET.find(m => m.id === r16.homeR32);
+    const ar32 = R32_BRACKET.find(m => m.id === r16.awayR32);
+    return [...new Set([...(hr32?.home||[]),...(hr32?.away||[]),...(ar32?.home||[]),...(ar32?.away||[])])].sort();
   }
 
-  // QF slots — teams from both feeding R16 matches
-  const qf = qfBracket.find(m => m.id === slotId);
+  const qf = QF_BRACKET.find(m => m.id === slotId);
   if (qf) {
-    const homeR16 = r16bracket.find(m => m.id === qf.homeR16);
-    const awayR16 = r16bracket.find(m => m.id === qf.awayR16);
-    const getR16Teams = (r16m) => {
+    const getR16Teams = (r16id) => {
+      const r16m = R16_BRACKET.find(m => m.id === r16id);
       if (!r16m) return [];
-      const hr32 = r32bracket.find(m => m.id === r16m.homeR32);
-      const ar32 = r32bracket.find(m => m.id === r16m.awayR32);
-      return [...(hr32?.home||[]), ...(hr32?.away||[]), ...(ar32?.home||[]), ...(ar32?.away||[])];
+      const hr32 = R32_BRACKET.find(m => m.id === r16m.homeR32);
+      const ar32 = R32_BRACKET.find(m => m.id === r16m.awayR32);
+      return [...(hr32?.home||[]),...(hr32?.away||[]),...(ar32?.home||[]),...(ar32?.away||[])];
     };
-    return [...new Set([...getR16Teams(homeR16), ...getR16Teams(awayR16)])].sort();
+    return [...new Set([...getR16Teams(qf.homeR16),...getR16Teams(qf.awayR16)])].sort();
   }
 
-  // SF slots
   if (slotId === "sf_1") {
-    return getEligibleTeams("qf_1", r32bracket, r16bracket, qfBracket)
-      .concat(getEligibleTeams("qf_2", r32bracket, r16bracket, qfBracket))
-      .filter((v,i,a) => a.indexOf(v) === i).sort();
+    return [...new Set([...getEligibleTeams("qf_1"),...getEligibleTeams("qf_2")])].sort();
   }
   if (slotId === "sf_2") {
-    return getEligibleTeams("qf_3", r32bracket, r16bracket, qfBracket)
-      .concat(getEligibleTeams("qf_4", r32bracket, r16bracket, qfBracket))
-      .filter((v,i,a) => a.indexOf(v) === i).sort();
+    return [...new Set([...getEligibleTeams("qf_3"),...getEligibleTeams("qf_4")])].sort();
   }
 
-  // Bronze + Final — all teams
-  if (slotId === "bronze" || slotId === "final") {
-    return Object.values(GROUPS_2026).flat().sort();
-  }
-
+  // Bronze and Final — all teams possible
   return Object.values(GROUPS_2026).flat().sort();
 }
 
 // ─── INFER BRACKET FROM GROUP PREDICTIONS ────────────────────────────────────
-// Given a user's group stage predictions, infer who would win/finish 2nd/3rd
-// in each group, then auto-fill the knockout bracket accordingly.
 
-function groupOutcome(h, a) {
-  const ph = parseInt(h), pa = parseInt(a);
-  if (isNaN(ph) || isNaN(pa)) return null;
-  if (ph > pa) return "home";
-  if (pa > ph) return "away";
-  return "draw";
-}
-
-// Given predictions for all matches in a group, return standing [1st, 2nd, 3rd, 4th]
 function inferGroupStanding(groupTeams, groupMatches, preds) {
-  // Build points table
   const pts = {}, gf = {}, ga = {};
   groupTeams.forEach(t => { pts[t] = 0; gf[t] = 0; ga[t] = 0; });
-
   groupMatches.forEach(m => {
-    // Use actual result if available, else use prediction
     const r = m.result || preds[m.id];
     if (!r) return;
     const hg = parseInt(r.homeGoals), ag = parseInt(r.awayGoals);
     if (isNaN(hg) || isNaN(ag)) return;
-    gf[m.home] = (gf[m.home]||0) + hg;
-    ga[m.home] = (ga[m.home]||0) + ag;
-    gf[m.away] = (gf[m.away]||0) + ag;
-    ga[m.away] = (ga[m.away]||0) + hg;
-    if (hg > ag) { pts[m.home] = (pts[m.home]||0) + 3; }
+    gf[m.home] = (gf[m.home]||0) + hg; ga[m.home] = (ga[m.home]||0) + ag;
+    gf[m.away] = (gf[m.away]||0) + ag; ga[m.away] = (ga[m.away]||0) + hg;
+    if (hg > ag) pts[m.home] = (pts[m.home]||0) + 3;
     else if (hg === ag) { pts[m.home] = (pts[m.home]||0) + 1; pts[m.away] = (pts[m.away]||0) + 1; }
-    else { pts[m.away] = (pts[m.away]||0) + 3; }
+    else pts[m.away] = (pts[m.away]||0) + 3;
   });
-
   return [...groupTeams].sort((a, b) => {
     if (pts[b] !== pts[a]) return pts[b] - pts[a];
-    const gdA = (gf[a]||0) - (ga[a]||0), gdB = (gf[b]||0) - (ga[b]||0);
+    const gdA = (gf[a]||0)-(ga[a]||0), gdB = (gf[b]||0)-(ga[b]||0);
     if (gdB !== gdA) return gdB - gdA;
     return (gf[b]||0) - (gf[a]||0);
   });
 }
 
-// R32 bracket slot → which group team fills it
-// Based on official FIFA bracket
+// R32 slot → which group position fills it (matches KNOCKOUT_TEMPLATE)
 const R32_HOME_SLOT = {
-  r32_1:  { type:"2nd", group:"A" },
-  r32_2:  { type:"1st", group:"E" },
-  r32_3:  { type:"1st", group:"F" },
-  r32_4:  { type:"1st", group:"C" },
+  r32_1:  { type:"1st", group:"A" },
+  r32_2:  { type:"1st", group:"C" },
+  r32_3:  { type:"1st", group:"E" },
+  r32_4:  { type:"1st", group:"G" },
   r32_5:  { type:"1st", group:"I" },
-  r32_6:  { type:"2nd", group:"E" },
-  r32_7:  { type:"1st", group:"A" },
-  r32_8:  { type:"1st", group:"L" },
-  r32_9:  { type:"1st", group:"D" },
-  r32_10: { type:"1st", group:"G" },
-  r32_11: { type:"2nd", group:"K" },
-  r32_12: { type:"1st", group:"H" },
-  r32_13: { type:"1st", group:"B" },
-  r32_14: { type:"1st", group:"J" },
-  r32_15: { type:"1st", group:"K" },
-  r32_16: { type:"2nd", group:"D" },
+  r32_6:  { type:"1st", group:"K" },
+  r32_7:  { type:"1st", group:"B" },
+  r32_8:  { type:"1st", group:"D" },
+  r32_9:  { type:"1st", group:"F" },
+  r32_10: { type:"1st", group:"H" },
+  r32_11: { type:"1st", group:"J" },
+  r32_12: { type:"1st", group:"L" },
+  r32_13: { type:"3rd", groups:["A","B","C","D","E","F"] },
+  r32_14: { type:"3rd", groups:["A","B","C","D","E","F"] },
+  r32_15: { type:"3rd", groups:["G","H","I","J","K","L"] },
+  r32_16: { type:"3rd", groups:["G","H","I","J","K","L"] },
 };
 
 const R32_AWAY_SLOT = {
   r32_1:  { type:"2nd", group:"B" },
-  r32_2:  { type:"3rd", groups:["A","B","C","D","F"] },
-  r32_3:  { type:"2nd", group:"C" },
-  r32_4:  { type:"2nd", group:"F" },
-  r32_5:  { type:"3rd", groups:["C","D","F","G","H"] },
-  r32_6:  { type:"2nd", group:"I" },
-  r32_7:  { type:"3rd", groups:["C","E","F","H","I"] },
-  r32_8:  { type:"3rd", groups:["E","H","I","J","K"] },
-  r32_9:  { type:"3rd", groups:["B","E","F","I","J"] },
-  r32_10: { type:"3rd", groups:["A","E","H","I","J"] },
-  r32_11: { type:"2nd", group:"L" },
-  r32_12: { type:"2nd", group:"J" },
-  r32_13: { type:"3rd", groups:["E","F","G","I","J"] },
-  r32_14: { type:"2nd", group:"H" },
-  r32_15: { type:"3rd", groups:["D","E","I","J","L"] },
-  r32_16: { type:"2nd", group:"G" },
+  r32_2:  { type:"2nd", group:"D" },
+  r32_3:  { type:"2nd", group:"F" },
+  r32_4:  { type:"2nd", group:"H" },
+  r32_5:  { type:"2nd", group:"J" },
+  r32_6:  { type:"2nd", group:"L" },
+  r32_7:  { type:"2nd", group:"A" },
+  r32_8:  { type:"2nd", group:"C" },
+  r32_9:  { type:"2nd", group:"E" },
+  r32_10: { type:"2nd", group:"G" },
+  r32_11: { type:"2nd", group:"I" },
+  r32_12: { type:"2nd", group:"K" },
+  r32_13: { type:"3rd", groups:["G","H","I","J","K","L"] },
+  r32_14: { type:"3rd", groups:["G","H","I","J","K","L"] },
+  r32_15: { type:"3rd", groups:["A","B","C","D","E","F"] },
+  r32_16: { type:"3rd", groups:["A","B","C","D","E","F"] },
 };
 
-// Given all group standings, infer what team fills a slot
 function inferSlotTeam(slot, groupStandings) {
   if (!slot) return null;
   if (slot.type === "1st") return groupStandings[slot.group]?.[0] || null;
   if (slot.type === "2nd") return groupStandings[slot.group]?.[1] || null;
   if (slot.type === "3rd") {
-    // Best 3rd from candidate groups — return 3rd of first group that has one
     for (const g of (slot.groups || [])) {
       const t = groupStandings[g]?.[2];
       if (t) return t;
@@ -198,10 +164,8 @@ function inferSlotTeam(slot, groupStandings) {
   return null;
 }
 
-// Main function: given userPredictions + groupMatches + knockoutMatches,
-// return suggested homeTeam/awayTeam for each knockout match
-export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds, realResults) {
-  // 1. Infer group standings from predictions (falling back to real results)
+export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds) {
+  // 1. Infer group standings
   const groupStandings = {};
   Object.entries(GROUPS_2026).forEach(([grp, teams]) => {
     const matches = groupMatches.filter(m => m.group === grp);
@@ -217,49 +181,28 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     };
   });
 
-  // 3. Infer R16 teams from knockout predictions
-  const r16Inferred = {};
-  R16_BRACKET.forEach(m => {
-    const homePred = knockoutPreds[m.homeR32];
-    const awayPred = knockoutPreds[m.awayR32];
-    const homeR32 = r32Inferred[m.homeR32];
-    const awayR32 = r32Inferred[m.awayR32];
-
-    // Winner of homeR32 match
-    let homeWinner = null;
-    if (homePred?.homeTeam && homePred?.awayTeam && homePred?.homeGoals !== undefined) {
-      const hg = parseInt(homePred.homeGoals), ag = parseInt(homePred.awayGoals);
-      if (!isNaN(hg) && !isNaN(ag)) homeWinner = hg >= ag ? homePred.homeTeam : homePred.awayTeam;
-    } else if (homePred?.homeTeam) {
-      homeWinner = homePred.homeTeam; // default to home if no score
-    } else if (homeR32?.home) {
-      homeWinner = homeR32.home;
-    }
-
-    let awayWinner = null;
-    if (awayPred?.homeTeam && awayPred?.awayTeam && awayPred?.homeGoals !== undefined) {
-      const hg = parseInt(awayPred.homeGoals), ag = parseInt(awayPred.awayGoals);
-      if (!isNaN(hg) && !isNaN(ag)) awayWinner = hg >= ag ? awayPred.homeTeam : awayPred.awayTeam;
-    } else if (awayPred?.homeTeam) {
-      awayWinner = awayPred.homeTeam;
-    } else if (awayR32?.home) {
-      awayWinner = awayR32.home;
-    }
-
-    r16Inferred[m.id] = { home: homeWinner, away: awayWinner };
-  });
-
-  // 4. Infer QF, SF, Final similarly
-  function inferWinner(matchId, pred, inferred) {
-    const p = pred?.[matchId];
+  // 3. Helper: infer winner of a match
+  function inferWinner(matchId, preds, inferred) {
+    const p = preds?.[matchId];
     const inf = inferred?.[matchId];
-    if (p?.homeTeam && p?.awayTeam && p?.homeGoals !== undefined) {
+    if (p?.homeTeam && p?.awayTeam && p?.homeGoals !== undefined && p?.awayGoals !== undefined) {
       const hg = parseInt(p.homeGoals), ag = parseInt(p.awayGoals);
       if (!isNaN(hg) && !isNaN(ag)) return hg >= ag ? p.homeTeam : p.awayTeam;
     }
+    // No score yet — use home team as default suggestion
     return p?.homeTeam || inf?.home || null;
   }
 
+  // 4. Infer R16
+  const r16Inferred = {};
+  R16_BRACKET.forEach(m => {
+    r16Inferred[m.id] = {
+      home: inferWinner(m.homeR32, knockoutPreds, r32Inferred),
+      away: inferWinner(m.awayR32, knockoutPreds, r32Inferred),
+    };
+  });
+
+  // 5. Infer QF
   const qfInferred = {};
   QF_BRACKET.forEach(m => {
     qfInferred[m.id] = {
@@ -268,6 +211,7 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     };
   });
 
+  // 6. Infer SF
   const sfInferred = {};
   SF_BRACKET.forEach(m => {
     sfInferred[m.id] = {
@@ -276,25 +220,25 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     };
   });
 
-  const bronzeHome = inferWinner("sf_1", knockoutPreds, sfInferred) === knockoutPreds?.sf_1?.homeTeam
-    ? knockoutPreds?.sf_1?.awayTeam : knockoutPreds?.sf_1?.homeTeam;
-  const bronzeAway = inferWinner("sf_2", knockoutPreds, sfInferred) === knockoutPreds?.sf_2?.homeTeam
-    ? knockoutPreds?.sf_2?.awayTeam : knockoutPreds?.sf_2?.homeTeam;
+  // 7. Bronze = losers of SF
+  const sf1Pred = knockoutPreds?.sf_1;
+  const sf2Pred = knockoutPreds?.sf_2;
+  const sf1Winner = inferWinner("sf_1", knockoutPreds, sfInferred);
+  const sf2Winner = inferWinner("sf_2", knockoutPreds, sfInferred);
+  const bronzeHome = sf1Pred?.homeTeam && sf1Pred.homeTeam !== sf1Winner ? sf1Pred.homeTeam : sf1Pred?.awayTeam || null;
+  const bronzeAway = sf2Pred?.homeTeam && sf2Pred.homeTeam !== sf2Winner ? sf2Pred.homeTeam : sf2Pred?.awayTeam || null;
 
   return {
     ...r32Inferred,
     ...r16Inferred,
     ...qfInferred,
     ...sfInferred,
-    bronze: { home: bronzeHome || null, away: bronzeAway || null },
-    final: {
-      home: inferWinner("sf_1", knockoutPreds, sfInferred),
-      away: inferWinner("sf_2", knockoutPreds, sfInferred),
-    },
+    bronze: { home: bronzeHome, away: bronzeAway },
+    final: { home: sf1Winner, away: sf2Winner },
   };
 }
 
-// = 2026-06-11T19:00:00Z
+// First match: Mexico vs South Africa, Thu 11 Jun 23:00 Dubai = 2026-06-11T19:00:00Z
 export const FIRST_MATCH_UTC = new Date("2026-06-11T19:00:00Z");
 
 export function isPredictionLocked() {
