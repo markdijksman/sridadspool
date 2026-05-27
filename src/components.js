@@ -1,8 +1,77 @@
 import React, { useState, useRef } from 'react';
 import { FLAGS, calcPts } from './data';
 import { LEGAL_TEXT } from './styles';
+import { TEAM_INFO, rankEmoji } from './teamInfo';
 
-export function SriDadsLogo({ size = 40 }) {
+export function TeamPopup({ team, onClose }) {
+  const info = TEAM_INFO[team];
+  if (!info) return null;
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+      onClick={onClose}>
+      <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)" }}/>
+      <div style={{ position:"relative", background:"#012148", border:"1px solid var(--gold-bd)", borderRadius:"20px 20px 0 0", padding:"20px 22px 36px", width:"100%", maxWidth:480 }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ width:36, height:4, background:"rgba(255,255,255,0.2)", borderRadius:2, margin:"0 auto 16px" }}/>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+          <span style={{ fontSize:40 }}>{FLAGS[team] || "🏳️"}</span>
+          <div>
+            <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:22, color:"#fff", lineHeight:1 }}>{team}</p>
+            <p style={{ fontSize:12, color:"var(--muted)" }}>{info.conf}</p>
+          </div>
+          <div style={{ marginLeft:"auto", textAlign:"right" }}>
+            <p style={{ fontSize:26, lineHeight:1 }}>{rankEmoji(info.rank)}</p>
+            <p style={{ fontSize:11, color:"var(--gold)", fontWeight:700 }}>FIFA #{info.rank}</p>
+          </div>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px" }}>
+            <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>FIFA RANKING</p>
+            <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, color:"var(--gold)" }}>#{info.rank}</p>
+            <p style={{ fontSize:10, color:"var(--muted)" }}>{info.pts} pts</p>
+          </div>
+          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px" }}>
+            <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>KEY PLAYER</p>
+            <p style={{ fontSize:13, fontWeight:700, color:"#fff", lineHeight:1.3 }}>{info.key}</p>
+          </div>
+        </div>
+        <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
+          <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>PLAYING STYLE</p>
+          <p style={{ fontSize:13, color:"var(--text)" }}>{info.style}</p>
+        </div>
+        <button onClick={onClose} className="btn btn-ghost" style={{ width:"100%", fontSize:13 }}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+export function TeamBadge({ team, right }) {
+  const [showPopup, setShowPopup] = useState(false);
+  const flag = FLAGS[team] || "🏳️";
+  const displayName = {
+    "Bosnia and Herzegovina": "Bosnia & Herz.",
+    "Korea Republic": "Korea Rep.",
+    "United States": "USA",
+    "Trinidad and Tobago": "Trinidad",
+    "Central African Republic": "C.A.R.",
+  }[team] || team;
+  const hasInfo = !!TEAM_INFO[team];
+  return (
+    <>
+      <span onClick={() => hasInfo && setShowPopup(true)}
+        style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12,
+          flexDirection: right ? "row-reverse" : "row", minWidth:0,
+          cursor: hasInfo ? "pointer" : "default" }}>
+        <span style={{ fontSize:15, flexShrink:0 }}>{flag}</span>
+        <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", minWidth:0, maxWidth:"100%",
+          borderBottom: hasInfo ? "1px dotted rgba(232,184,75,0.35)" : "none" }}>
+          {displayName}
+        </span>
+      </span>
+      {showPopup && <TeamPopup team={team} onClose={() => setShowPopup(false)} />}
+    </>
+  );
+}
   return (
     <div style={{ width:size, height:size, flexShrink:0, borderRadius:size*0.12, overflow:"hidden", background:"#012148" }}>
       <img src="/logo.png" alt="GEMS SRI Football Dad's Club" width={size} height={size} style={{ objectFit:"cover", display:"block" }} />
@@ -41,23 +110,6 @@ export function TopBar({ saving, syncStatus, lastSync }) {
   );
 }
 
-export function TeamBadge({ team, right }) {
-  const flag = FLAGS[team] || "🏳️";
-  // Shorten known long names
-  const displayName = {
-    "Bosnia and Herzegovina": "Bosnia & Herz.",
-    "Korea Republic": "Korea Rep.",
-    "United States": "USA",
-    "Trinidad and Tobago": "Trinidad",
-    "Central African Republic": "C.A.R.",
-  }[team] || team;
-  return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12, flexDirection: right ? "row-reverse" : "row", minWidth:0 }}>
-      <span style={{ fontSize:15, flexShrink:0 }}>{flag}</span>
-      <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", minWidth:0, maxWidth:"100%" }}>{displayName}</span>
-    </span>
-  );
-}
 
 export function Pts({ pts, stage }) {
   // pts already has multiplier applied
