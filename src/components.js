@@ -43,10 +43,18 @@ export function TopBar({ saving, syncStatus, lastSync }) {
 
 export function TeamBadge({ team, right }) {
   const flag = FLAGS[team] || "🏳️";
+  // Shorten known long names
+  const displayName = {
+    "Bosnia and Herzegovina": "Bosnia & Herz.",
+    "Korea Republic": "Korea Rep.",
+    "United States": "USA",
+    "Trinidad and Tobago": "Trinidad",
+    "Central African Republic": "C.A.R.",
+  }[team] || team;
   return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12, flexDirection: right ? "row-reverse" : "row" }}>
-      <span style={{ fontSize:15 }}>{flag}</span>
-      <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:110 }}>{team}</span>
+    <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:600, fontSize:12, flexDirection: right ? "row-reverse" : "row", minWidth:0 }}>
+      <span style={{ fontSize:15, flexShrink:0 }}>{flag}</span>
+      <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", minWidth:0, maxWidth:"100%" }}>{displayName}</span>
     </span>
   );
 }
@@ -133,10 +141,10 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
         </div>
       )}
       <div className={`mrow ${locked ? "played" : ""}`}>
-        <div style={{ flex:1, textAlign:"right" }}>
+        <div style={{ flex:1, textAlign:"right", minWidth:0, overflow:"hidden" }}>
           <TeamBadge team={isKnockout && !FLAGS[match.home] ? "TBD" : match.home} right />
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
           <input
             type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
             className={`sbox ${filled ? "filled" : ""}`}
@@ -155,7 +163,7 @@ export function MatchRow({ match, myPred, onUpdate, showResult }) {
               onUpdate && onUpdate(match.id, pred.homeGoals ?? "", val);
             }} />
         </div>
-        <div style={{ flex:1 }}>
+        <div style={{ flex:1, minWidth:0, overflow:"hidden" }}>
           <TeamBadge team={isKnockout && !FLAGS[match.away] ? "TBD" : match.away} />
         </div>
         {pts !== null && <Pts pts={pts} />}
