@@ -600,10 +600,174 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
 
 // ─── LEADERBOARD ─────────────────────────────────────────────────────────────
 
+// ─── PLAYER PREDICTIONS POPUP ────────────────────────────────────────────────
+
+function PlayerPredictionsPopup({ player, shared, onClose }) {
+  const [activeGroup, setActiveGroup] = useState("A");
+  const [activeTab, setActiveTab] = useState("group");
+  const preds = shared.predictions[player.id] || {};
+  const groupKeys = Object.keys(GROUPS_2026);
+  const stages = ["Round of 32","Round of 16","Quarter-final","Semi-final","Bronze Final","Final"];
+
+  function isPredFilled(p) {
+    if (!p) return false;
+    return p.homeGoals !== undefined && p.homeGoals !== "" && p.homeGoals !== null &&
+           p.awayGoals !== undefined && p.awayGoals !== "" && p.awayGoals !== null;
+  }
+
+  const filledGroup = shared.matches.filter(m => isPredFilled(preds[m.id])).length;
+  const filledKO = shared.knockoutMatches.filter(m => isPredFilled(preds[m.id])).length;
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"flex-end" }}
+      onClick={onClose}>
+      <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)" }}/>
+      <div style={{ position:"relative", background:"#012148", border:"1px solid var(--gold-bd)", borderRadius:"20px 20px 0 0", width:"100%", maxHeight:"88vh", display:"flex", flexDirection:"column" }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Handle */}
+        <div style={{ padding:"12px 20px 0", flexShrink:0 }}>
+          <div style={{ width:36, height:4, background:"rgba(255,255,255,0.2)", borderRadius:2, margin:"0 auto 12px" }}/>
+
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+            <div style={{ width:44, height:44, borderRadius:"50%", background:"var(--gold-pale)", border:"2px solid var(--gold-bd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>👤</div>
+            <div style={{ flex:1 }}>
+              <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"var(--gold)", lineHeight:1 }}>{player.name}</p>
+              <p style={{ fontSize:11, color:"var(--muted)" }}>
+                {filledGroup}/72 group · {filledKO}/31 knockout
+                {shared.champions[player.id] && <span> · 🏆 {FLAGS[shared.champions[player.id]]} {shared.champions[player.id]}</span>}
+              </p>
+            </div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:30, height:30, color:"var(--muted)", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+            {[["group","Group Stage"],["knockout","Knockout"]].map(([t,l]) => (
+              <button key={t} className={`tab ${activeTab===t?"on":"off"}`} style={{ fontSize:12, padding:"7px 14px" }} onClick={() => setActiveTab(t)}>{l}</button>
+            ))}
+          </div>
+
+          {/* Group tabs */}
+          {activeTab === "group" && (
+            <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4, paddingRight:32, scrollbarWidth:"none" }} className="hide-scrollbar">
+              {groupKeys.map(g => {
+                const matches = shared.matches.filter(m => m.group === g);
+                const done = matches.filter(m => isPredFilled(preds[m.id])).length;
+                return (
+                  <button key={g} className={`gtab ${activeGroup===g?"on":"off"}`}
+                    onClick={() => setActiveGroup(g)}
+                    style={{ position:"relative", flexShrink:0, fontSize:13, padding:"6px 11px" }}>
+                    {g}
+                    {done === matches.length && <span style={{ position:"absolute", top:-4, right:-4, width:7, height:7, background:"var(--ok)", borderRadius:"50%", border:"2px solid var(--navy)" }}/>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Scrollable content */}
+        <div style={{ overflowY:"auto", padding:"10px 16px 36px", flex:1 }}>
+          {activeTab === "group" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {shared.matches.filter(m => m.group === activeGroup).map(m => {
+                const pred = preds[m.id];
+                const filled = isPredFilled(pred);
+                const pts = m.result && filled ? calcPts(pred, m.result, "group") : null;
+                return (
+                  <div key={m.id} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid var(--bd)", borderRadius:10, padding:"10px 12px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                      <span style={{ fontSize:10, color:"var(--muted)" }}>{m.date} · {m.time}</span>
+                      {pts !== null && <Pts pts={pts} />}
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:5, flex:1, justifyContent:"flex-end" }}>
+                        <span style={{ fontSize:12, fontWeight:600 }}>{m.home}</span>
+                        <span>{FLAGS[m.home]}</span>
+                      </div>
+                      <div style={{ margin:"0 10px", textAlign:"center", minWidth:60 }}>
+                        {filled
+                          ? <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color: pts === 3 ? "var(--ok)" : pts === 1 ? "var(--amber)" : pts === 0 && m.result ? "var(--danger)" : "var(--gold)" }}>
+                              {pred.homeGoals} – {pred.awayGoals}
+                            </span>
+                          : <span style={{ color:"var(--muted)", fontSize:12 }}>– –</span>
+                        }
+                        {m.result && <p style={{ fontSize:9, color:"var(--muted)" }}>Result: {m.result.homeGoals}–{m.result.awayGoals}</p>}
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:5, flex:1 }}>
+                        <span>{FLAGS[m.away]}</span>
+                        <span style={{ fontSize:12, fontWeight:600 }}>{m.away}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {activeTab === "knockout" && (
+            <div>
+              {stages.map(stage => {
+                const matches = shared.knockoutMatches.filter(m => m.stage === stage);
+                if (!matches.length) return null;
+                return (
+                  <div key={stage} style={{ marginBottom:16 }}>
+                    <p className="lbl" style={{ marginBottom:8 }}>{stage}</p>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {matches.map(m => {
+                        const pred = preds[m.id];
+                        const filled = isPredFilled(pred);
+                        const pts = m.result && filled ? calcPts(pred, m.result, stage) : null;
+                        const homeTeam = pred?.homeTeam || m.home;
+                        const awayTeam = pred?.awayTeam || m.away;
+                        return (
+                          <div key={m.id} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid var(--bd)", borderRadius:10, padding:"10px 12px" }}>
+                            <p style={{ fontSize:10, color:"var(--gold)", marginBottom:6 }}>{m.label}</p>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:5, flex:1, justifyContent:"flex-end" }}>
+                                <span style={{ fontSize:12, fontWeight:600, color: FLAGS[homeTeam] ? "var(--text)" : "var(--muted)" }}>{homeTeam}</span>
+                                {FLAGS[homeTeam] && <span>{FLAGS[homeTeam]}</span>}
+                              </div>
+                              <div style={{ margin:"0 10px", textAlign:"center", minWidth:60 }}>
+                                {filled
+                                  ? <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color: pts === null ? "var(--gold)" : pts > 0 ? "var(--ok)" : "var(--danger)" }}>
+                                      {pred.homeGoals} – {pred.awayGoals}
+                                    </span>
+                                  : <span style={{ color:"var(--muted)", fontSize:12 }}>– –</span>
+                                }
+                                {m.result && <p style={{ fontSize:9, color:"var(--muted)" }}>Result: {m.result.homeGoals}–{m.result.awayGoals}</p>}
+                              </div>
+                              <div style={{ display:"flex", alignItems:"center", gap:5, flex:1 }}>
+                                {FLAGS[awayTeam] && <span>{FLAGS[awayTeam]}</span>}
+                                <span style={{ fontSize:12, fontWeight:600, color: FLAGS[awayTeam] ? "var(--text)" : "var(--muted)" }}>{awayTeam}</span>
+                              </div>
+                            </div>
+                            {pts !== null && <div style={{ textAlign:"right", marginTop:4 }}><Pts pts={pts} /></div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
+
 function LeaderboardView({ leaderboard, shared, me, onRefresh, lastSync }) {
   const [refreshing, setRefreshing] = useState(false);
+  const [viewingPlayer, setViewingPlayer] = useState(null);
   const maxPts = leaderboard[0]?.pts || 1;
   const myRank = me ? leaderboard.findIndex(p => p.id === me.id) : -1;
+  const locked = isPredictionLocked();
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -611,7 +775,6 @@ function LeaderboardView({ leaderboard, shared, me, onRefresh, lastSync }) {
     setTimeout(() => setRefreshing(false), 800);
   }
 
-  // WhatsApp share with standings
   function shareStandings() {
     const top3 = leaderboard.slice(0, 3).map((p, i) => `${["🥇","🥈","🥉"][i]} ${p.name} — ${p.pts} pts`).join("\n");
     const myLine = myRank >= 0 ? `\n\nI'm #${myRank+1} with ${leaderboard[myRank].pts} pts 💪` : "";
@@ -621,6 +784,13 @@ function LeaderboardView({ leaderboard, shared, me, onRefresh, lastSync }) {
 
   return (
     <div>
+      {viewingPlayer && (
+        <PlayerPredictionsPopup
+          player={viewingPlayer}
+          shared={shared}
+          onClose={() => setViewingPlayer(null)}
+        />
+      )}
       <div style={{ padding:"16px 16px 0" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
           <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, color:"var(--gold)" }}>🏆 Leaderboard</p>
@@ -634,7 +804,9 @@ function LeaderboardView({ leaderboard, shared, me, onRefresh, lastSync }) {
             </button>
           </div>
         </div>
-        {lastSync && <p style={{ fontSize:10, color:"var(--muted)", marginBottom:14 }}>Updated {Math.floor((Date.now()-lastSync)/60000) || "<1"} min ago</p>}
+        {lastSync && <p style={{ fontSize:10, color:"var(--muted)", marginBottom:6 }}>Updated {Math.floor((Date.now()-lastSync)/60000) || "<1"} min ago</p>}
+        {!locked && <p style={{ fontSize:11, color:"var(--muted)", marginBottom:14 }}>👀 Predictions visible after tournament starts (Thu 11 Jun)</p>}
+        {locked && <p style={{ fontSize:11, color:"var(--ok)", marginBottom:14 }}>👀 Tap a name to see their predictions!</p>}
       </div>
 
       <div style={{ padding:"0 16px" }}>
@@ -646,7 +818,10 @@ function LeaderboardView({ leaderboard, shared, me, onRefresh, lastSync }) {
                 const ptsBehind = i > 0 ? leaderboard[0].pts - p.pts : 0;
                 return (
                   <div key={p.id} className={`card ${i===0?"lb1":i===1?"lb2":i===2?"lb3":""}`}
-                    style={{ padding:"16px 18px", border: isMe ? "2px solid var(--gold)" : undefined, boxShadow: isMe ? "0 0 12px rgba(232,184,75,0.2)" : undefined }}>
+                    style={{ padding:"16px 18px", border: isMe ? "2px solid var(--gold)" : undefined,
+                      boxShadow: isMe ? "0 0 12px rgba(232,184,75,0.2)" : undefined,
+                      cursor: locked ? "pointer" : "default" }}
+                    onClick={() => locked && setViewingPlayer(p)}>
                     <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                       <span style={{ fontSize:22, minWidth:30, textAlign:"center" }}>
                         {i < 3 ? ["🥇","🥈","🥉"][i] : <span style={{ fontFamily:"'Bebas Neue', sans-serif", color:"var(--muted)", fontSize:18 }}>#{i+1}</span>}
@@ -655,6 +830,7 @@ function LeaderboardView({ leaderboard, shared, me, onRefresh, lastSync }) {
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <p style={{ fontWeight:700, fontSize:15 }}>{p.name}</p>
                           {isMe && <span style={{ fontSize:10, background:"var(--gold)", color:"#012148", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>YOU</span>}
+                          {locked && !isMe && <span style={{ fontSize:10, color:"var(--muted)" }}>👁</span>}
                         </div>
                         <p style={{ fontSize:11, color:"var(--muted)" }}>⭐ {p.exact} exact · ✅ {p.correct} correct</p>
                         {shared.champions[p.id] && <p style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>🏆 {FLAGS[shared.champions[p.id]]} {shared.champions[p.id]}</p>}
