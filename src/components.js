@@ -72,6 +72,8 @@ export function TeamBadge({ team, right }) {
     </>
   );
 }
+
+export function SriDadsLogo({ size = 40 }) {
   return (
     <div style={{ width:size, height:size, flexShrink:0, borderRadius:size*0.12, overflow:"hidden", background:"#012148" }}>
       <img src="/logo.png" alt="GEMS SRI Football Dad's Club" width={size} height={size} style={{ objectFit:"cover", display:"block" }} />
