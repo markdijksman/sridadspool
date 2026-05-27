@@ -323,12 +323,13 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
 
   const myPreds = shared.predictions[me.id] || {};
 
-  // Fix: check both homeGoals AND awayGoals are non-empty strings or valid numbers
+  // Robust check: 0 is a valid score, empty string and undefined/null are not
   function isPredFilled(p) {
     if (!p) return false;
     const hg = p.homeGoals, ag = p.awayGoals;
-    return hg !== undefined && hg !== "" && hg !== null &&
-           ag !== undefined && ag !== "" && ag !== null;
+    const hOk = hg !== undefined && hg !== null && String(hg) !== "";
+    const aOk = ag !== undefined && ag !== null && String(ag) !== "";
+    return hOk && aOk;
   }
 
   const filled = shared.matches.filter(m => isPredFilled(myPreds[m.id])).length;
@@ -388,44 +389,50 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   return (
     <div>
       <Confetti active={confetti} />
-      <div style={{ padding:"16px 16px 0" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
-          <div>
-            <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"var(--gold)" }}>✏️ My Predictions</p>
-            <p style={{ color:"var(--muted)", fontSize:12 }}>
-              {me.name} · {filled}/{totalGroupMatches} group
-              {" · "}{shared.knockoutMatches.filter(m => isPredFilled(myPreds[m.id])).length}/{shared.knockoutMatches.length} knockout
-            </p>
+      {/* Compact sticky header */}
+      <div style={{ padding:"10px 16px 0", background:"var(--navy)", position:"sticky", top:56, zIndex:100, borderBottom:"1px solid var(--bd)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:18, color:"var(--gold)", lineHeight:1 }}>✏️ {me.name}</p>
+            <p style={{ color:"var(--muted)", fontSize:11 }}>{filled}/{totalGroupMatches} · {shared.knockoutMatches.filter(m => isPredFilled(myPreds[m.id])).length}/{shared.knockoutMatches.length} KO</p>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={logout}>Log out</button>
+          <button className="btn btn-ghost btn-sm" style={{ padding:"5px 12px", fontSize:11 }} onClick={logout}>Log out</button>
         </div>
-        <div style={{ marginBottom:14 }}><Pbar value={filled} max={totalGroupMatches} /></div>
-        <div style={{ display:"flex", gap:8, marginBottom:14, overflowX:"auto", paddingBottom:2 }}>
+        <div style={{ marginBottom:8 }}><Pbar value={filled} max={totalGroupMatches} /></div>
+        <div style={{ display:"flex", gap:8, marginBottom:10 }}>
           {[["group","Group Stage"],["knockout","Knockout"]].map(([s, l]) => (
-            <button key={s} className={`tab ${activeStage === s ? "on" : "off"}`} onClick={() => setActiveStage(s)}>{l}</button>
+            <button key={s} className={`tab ${activeStage === s ? "on" : "off"}`} style={{ fontSize:12, padding:"7px 14px" }} onClick={() => setActiveStage(s)}>{l}</button>
           ))}
         </div>
       </div>
-      <div style={{ padding:"0 16px" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div style={{ padding:"10px 16px 0" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {activeStage === "group" && (
           <div>
             {isPredictionLocked() && (
-              <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
+              <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
                 <p style={{ fontSize:12, color:"#E05555", fontWeight:600 }}>🔒 Group stage predictions are locked — the tournament has started!</p>
               </div>
             )}
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:10 }}>
-              {groupKeys.map(g => {
-                const { done, total } = groupProgress(g);
-                const complete = done === total;
-                return (
-                  <button key={g} className={`gtab ${activeGroup === g ? "on" : "off"}`} onClick={() => setActiveGroup(g)} style={{ position:"relative" }}>
-                    {g}
-                    {complete && activeGroup !== g && <span style={{ position:"absolute", top:-4, right:-4, width:8, height:8, background:"var(--ok)", borderRadius:"50%", border:"2px solid var(--navy)" }}/>}
-                    {!complete && done > 0 && activeGroup !== g && <span style={{ position:"absolute", top:-4, right:-4, width:8, height:8, background:"var(--amber)", borderRadius:"50%", border:"2px solid var(--navy)" }}/>}
-                  </button>
-                );
-              })}
+            {/* Single scrollable row of group tabs */}
+            <div style={{ position:"relative", marginBottom:8 }}>
+              <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4, scrollbarWidth:"none", msOverflowStyle:"none" }}
+                className="hide-scrollbar">
+                {groupKeys.map(g => {
+                  const { done, total } = groupProgress(g);
+                  const complete = done === total;
+                  return (
+                    <button key={g} className={`gtab ${activeGroup === g ? "on" : "off"}`}
+                      onClick={() => setActiveGroup(g)}
+                      style={{ position:"relative", flexShrink:0 }}>
+                      {g}
+                      {complete && activeGroup !== g && <span style={{ position:"absolute", top:-4, right:-4, width:8, height:8, background:"var(--ok)", borderRadius:"50%", border:"2px solid var(--navy)" }}/>}
+                      {!complete && done > 0 && activeGroup !== g && <span style={{ position:"absolute", top:-4, right:-4, width:8, height:8, background:"var(--amber)", borderRadius:"50%", border:"2px solid var(--navy)" }}/>}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Fade hint on right to show scrollability */}
+              <div style={{ position:"absolute", right:0, top:0, bottom:4, width:32, background:"linear-gradient(to right, transparent, var(--navy))", pointerEvents:"none" }}/>
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               {(() => { const {done, total} = groupProgress(activeGroup); return (
