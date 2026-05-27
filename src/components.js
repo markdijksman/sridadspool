@@ -6,13 +6,18 @@ import { TEAM_INFO, rankEmoji } from './teamInfo';
 export function TeamPopup({ team, onClose }) {
   const info = TEAM_INFO[team];
   if (!info) return null;
+  const { p, w, d, l, gf, ga } = info.qualRecord;
+  const hasRecord = p > 0;
   return (
     <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
       onClick={onClose}>
       <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)" }}/>
-      <div style={{ position:"relative", background:"#012148", border:"1px solid var(--gold-bd)", borderRadius:"20px 20px 0 0", padding:"20px 22px 36px", width:"100%", maxWidth:480 }}
+      <div style={{ position:"relative", background:"#012148", border:"1px solid var(--gold-bd)", borderRadius:"20px 20px 0 0", padding:"20px 22px 36px", width:"100%", maxWidth:480, maxHeight:"85vh", overflowY:"auto" }}
         onClick={e => e.stopPropagation()}>
+        {/* Handle */}
         <div style={{ width:36, height:4, background:"rgba(255,255,255,0.2)", borderRadius:2, margin:"0 auto 16px" }}/>
+
+        {/* Header */}
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
           <span style={{ fontSize:40 }}>{FLAGS[team] || "🏳️"}</span>
           <div>
@@ -24,21 +29,45 @@ export function TeamPopup({ team, onClose }) {
             <p style={{ fontSize:11, color:"var(--gold)", fontWeight:700 }}>FIFA #{info.rank}</p>
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px" }}>
-            <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>FIFA RANKING</p>
-            <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:24, color:"var(--gold)" }}>#{info.rank}</p>
-            <p style={{ fontSize:10, color:"var(--muted)" }}>{info.pts} pts</p>
-          </div>
-          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px" }}>
+
+        {/* Key player + style */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
+          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 12px" }}>
             <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>KEY PLAYER</p>
-            <p style={{ fontSize:13, fontWeight:700, color:"#fff", lineHeight:1.3 }}>{info.key}</p>
+            <p style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{info.key}</p>
+          </div>
+          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 12px" }}>
+            <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>PLAYING STYLE</p>
+            <p style={{ fontSize:12, color:"var(--text)" }}>{info.style}</p>
           </div>
         </div>
-        <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
-          <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>PLAYING STYLE</p>
-          <p style={{ fontSize:13, color:"var(--text)" }}>{info.style}</p>
+
+        {/* Qualification record */}
+        <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
+          <p style={{ fontSize:10, color:"var(--muted)", marginBottom:8 }}>🎯 QUALIFICATION — {info.qual}</p>
+          {hasRecord ? (
+            <>
+              <div style={{ display:"flex", gap:6, marginBottom:8, justifyContent:"space-between" }}>
+                {[["P", p, "var(--text)"],["W", w, "#3DAA6E"],["D", d, "#E08C2A"],["L", l, "#E05555"],["GF", gf, "var(--gold)"],["GA", ga, "var(--muted)"]].map(([label, val, color]) => (
+                  <div key={label} style={{ textAlign:"center", flex:1 }}>
+                    <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color, lineHeight:1 }}>{val}</p>
+                    <p style={{ fontSize:9, color:"var(--muted)", marginTop:2 }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize:11, color:"var(--muted)", lineHeight:1.5 }}>{info.qualNote}</p>
+            </>
+          ) : (
+            <p style={{ fontSize:12, color:"var(--muted)" }}>{info.qualNote}</p>
+          )}
         </div>
+
+        {/* World Cup history */}
+        <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
+          <p style={{ fontSize:10, color:"var(--muted)", marginBottom:4 }}>🏆 WORLD CUP HISTORY</p>
+          <p style={{ fontSize:12, color:"var(--text)", lineHeight:1.5 }}>{info.prevWC}</p>
+        </div>
+
         <button onClick={onClose} className="btn btn-ghost" style={{ width:"100%", fontSize:13 }}>Close</button>
       </div>
     </div>
