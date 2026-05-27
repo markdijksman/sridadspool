@@ -5,7 +5,7 @@ import { CSS } from './styles';
 import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox, SriDadsLogo
 } from './components';
-import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval } from './scoreSync';
+import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval, getRateLimitInfo } from './scoreSync';
 import { getEligibleTeams, getCountdown, isPredictionLocked, FIRST_MATCH_UTC, inferKnockoutBracket } from './knockout';
 
 // ─── CONFETTI ─────────────────────────────────────────────────────────────────
@@ -415,7 +415,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
             )}
             {/* Single scrollable row of group tabs */}
             <div style={{ position:"relative", marginBottom:8 }}>
-              <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4, scrollbarWidth:"none", msOverflowStyle:"none" }}
+              <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4, paddingRight:32, scrollbarWidth:"none", msOverflowStyle:"none" }}
                 className="hide-scrollbar">
                 {groupKeys.map(g => {
                   const { done, total } = groupProgress(g);
@@ -1164,6 +1164,18 @@ export default function App() {
         }
         setSyncStatus('ok');
         setLastSync(new Date());
+
+        // Check rate limit — warn at 75% usage
+        const { remaining, total } = getRateLimitInfo();
+        if (remaining !== null && total !== null) {
+          const usedPct = ((total - remaining) / total) * 100;
+          if (usedPct >= 75 && usedPct < 100) {
+            showToast(`⚠️ API limit: ${remaining}/${total} requests left today`);
+          } else if (remaining === 0) {
+            showToast("🚫 API daily limit reached — scores won't auto-update until tomorrow");
+          }
+        }
+
         const interval = getPollInterval(live);
         timeoutId = setTimeout(syncScores, interval);
       } catch (e) {
@@ -1195,7 +1207,12 @@ export default function App() {
     showToast(`Welcome, ${p.name}! ⚽`);
     setView("predict");
   }
-  function logout() { setMe(null); try { sessionStorage.removeItem("sri_me"); } catch {} setView("home"); }
+  function logout() {
+    if (!window.confirm("Are you sure you want to log out? Your predictions are saved.")) return;
+    setMe(null);
+    try { sessionStorage.removeItem("sri_me"); } catch {}
+    setView("home");
+  }
 
   const leaderboard = useMemo(() => {
     if (!shared) return [];
