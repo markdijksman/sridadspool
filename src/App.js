@@ -495,12 +495,23 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                     const locked = !!m.result;
                     const eligible = getEligibleTeams(m.id);
                     const sug = suggested[m.id] || {};
+                    // Teams already picked in OTHER matches of the SAME stage — can't be picked twice
+                    const usedInStage = new Set();
+                    shared.knockoutMatches.filter(x => x.stage === stage && x.id !== m.id).forEach(x => {
+                      const xp = myPreds[x.id];
+                      if (xp?.homeTeam) usedInStage.add(xp.homeTeam);
+                      if (xp?.awayTeam) usedInStage.add(xp.awayTeam);
+                    });
                     // IMPORTANT: only use pred.homeTeam as select value — never auto-fill with suggestion
                     // suggestion is shown as a hint only, never written to state automatically
                     const homeVal = pred.homeTeam || "";
                     const awayVal = pred.awayTeam || "";
-                    const homeIsAuto = !pred.homeTeam && !!sug.home;
-                    const awayIsAuto = !pred.awayTeam && !!sug.away;
+                    const homeIsAuto = !pred.homeTeam && !!sug.home && !usedInStage.has(sug.home);
+                    const awayIsAuto = !pred.awayTeam && !!sug.away && !usedInStage.has(sug.away);
+                    // Home options: eligible minus teams used elsewhere this stage minus the away pick of this match
+                    // But always keep the current pick visible
+                    const homeOpts = eligible.filter(t => (t === homeVal) || (!usedInStage.has(t) && t !== awayVal));
+                    const awayOpts = eligible.filter(t => (t === awayVal) || (!usedInStage.has(t) && t !== homeVal));
                     function setHomeTeam(val) { persist(s => { const cur = (s.predictions[me.id]||{})[m.id]||{}; return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...cur, homeTeam: val } } } }; }); }
                     function setAwayTeam(val) { persist(s => { const cur = (s.predictions[me.id]||{})[m.id]||{}; return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...cur, awayTeam: val } } } }; }); }
                     return (
@@ -520,7 +531,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                             <select className="inp" value={homeVal} style={{ borderColor: pred.homeTeam ? "var(--ok)" : homeIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setHomeTeam(e.target.value)}>
                               <option value="">{homeIsAuto ? `👆 Tap to pick — suggested: ${sug.home}` : "👆 Tap to select team..."}</option>
                               {homeIsAuto && <option value={sug.home}>✨ {sug.home} (suggested)</option>}
-                              {eligible.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
+                              {homeOpts.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
                           )}
                         </div>
@@ -537,6 +548,20 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                           {pts !== null && <Pts pts={pts} />}
                           {m.result && <span style={{ fontSize:11, color:"var(--muted)" }}>{m.result.homeGoals}–{m.result.awayGoals}</span>}
                         </div>
+                        {/* Draw detector — show "who progresses?" only when score is a draw */}
+                        {!locked && pred.homeGoals !== "" && pred.homeGoals !== undefined && pred.awayGoals !== "" && pred.awayGoals !== undefined && String(pred.homeGoals) === String(pred.awayGoals) && pred.homeTeam && pred.awayTeam && (
+                          <div style={{ background:"rgba(232,184,75,0.08)", border:"1px solid var(--gold-bd)", borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
+                            <p style={{ fontSize:10, color:"var(--gold)", marginBottom:6, fontWeight:600 }}>⚽ It's a draw after 90 min — who progresses?</p>
+                            <p style={{ fontSize:9, color:"var(--muted)", marginBottom:6 }}>For bracket routing only · does not affect your points</p>
+                            <select className="inp" style={{ fontSize:13, padding:"8px 12px" }}
+                              value={pred.progresser || ""}
+                              onChange={e => persist(s => ({ ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...(s.predictions[me.id]||{})[m.id], progresser: e.target.value } } } }))}>
+                              <option value="">👆 Select who goes through...</option>
+                              <option value={pred.homeTeam}>{FLAGS[pred.homeTeam]} {pred.homeTeam}</option>
+                              <option value={pred.awayTeam}>{FLAGS[pred.awayTeam]} {pred.awayTeam}</option>
+                            </select>
+                          </div>
+                        )}
                         <div>
                           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
                             <p style={{ fontSize:10, color:"var(--muted)" }}>Away team</p>
@@ -551,7 +576,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                             <select className="inp" value={awayVal} style={{ borderColor: pred.awayTeam ? "var(--ok)" : awayIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setAwayTeam(e.target.value)}>
                               <option value="">{awayIsAuto ? `👆 Tap to pick — suggested: ${sug.away}` : "👆 Tap to select team..."}</option>
                               {awayIsAuto && <option value={sug.away}>✨ {sug.away} (suggested)</option>}
-                              {eligible.filter(t => t !== homeVal).map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
+                              {awayOpts.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
                           )}
                         </div>
