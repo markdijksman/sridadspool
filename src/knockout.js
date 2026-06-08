@@ -5,28 +5,31 @@ import { GROUPS_2026 } from './data';
 
 const G = GROUPS_2026;
 
-// R32_BRACKET — IDs match data.js KNOCKOUT_TEMPLATE
-// r32_1=1A vs 2B, r32_2=1C vs 2D, r32_3=1E vs 2F, r32_4=1G vs 2H
-// r32_5=1I vs 2J, r32_6=1K vs 2L, r32_7=1B vs 2A, r32_8=1D vs 2C
-// r32_9=1F vs 2E, r32_10=1H vs 2G, r32_11=1J vs 2I, r32_12=1L vs 2K
-// r32_13..16 = Best 3rd place slots
+// R32_BRACKET — official FIFA 2026 bracket
+// Source: ESPN/Yahoo Sports (official rights holders)
+// 3rd place slots: which groups' 3rd-placed teams can fill each slot
+// r32_13: 1E vs best 3rd from A/B/C/D/F
+// r32_14: 1I vs best 3rd from C/D/F/G/H
+// r32_15: 1A vs best 3rd from C/E/F/H/I
+// r32_16: 1L vs best 3rd from E/H/I/J/K
 export const R32_BRACKET = [
-  { id:"r32_1",  label:"1A vs 2B",     home: G.A, away: G.B },
-  { id:"r32_2",  label:"1C vs 2D",     home: G.C, away: G.D },
-  { id:"r32_3",  label:"1E vs 2F",     home: G.E, away: G.F },
-  { id:"r32_4",  label:"1G vs 2H",     home: G.G, away: G.H },
-  { id:"r32_5",  label:"1I vs 2J",     home: G.I, away: G.J },
-  { id:"r32_6",  label:"1K vs 2L",     home: G.K, away: G.L },
-  { id:"r32_7",  label:"1B vs 2A",     home: G.B, away: G.A },
-  { id:"r32_8",  label:"1D vs 2C",     home: G.D, away: G.C },
-  { id:"r32_9",  label:"1F vs 2E",     home: G.F, away: G.E },
-  { id:"r32_10", label:"1H vs 2G",     home: G.H, away: G.G },
-  { id:"r32_11", label:"1J vs 2I",     home: G.J, away: G.I },
-  { id:"r32_12", label:"1L vs 2K",     home: G.L, away: G.K },
-  { id:"r32_13", label:"3rd best (1)", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F], away: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
-  { id:"r32_14", label:"3rd best (2)", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F], away: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
-  { id:"r32_15", label:"3rd best (3)", home: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F] },
-  { id:"r32_16", label:"3rd best (4)", home: [...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F] },
+  { id:"r32_1",  label:"1A vs 2B",     home: G.A,                                                              away: G.B },
+  { id:"r32_2",  label:"1C vs 2D",     home: G.C,                                                              away: G.D },
+  { id:"r32_3",  label:"1E vs 2F",     home: G.E,                                                              away: G.F },
+  { id:"r32_4",  label:"1G vs 2H",     home: G.G,                                                              away: G.H },
+  { id:"r32_5",  label:"1I vs 2J",     home: G.I,                                                              away: G.J },
+  { id:"r32_6",  label:"1K vs 2L",     home: G.K,                                                              away: G.L },
+  { id:"r32_7",  label:"1B vs 2A",     home: G.B,                                                              away: G.A },
+  { id:"r32_8",  label:"1D vs 2C",     home: G.D,                                                              away: G.C },
+  { id:"r32_9",  label:"1F vs 2E",     home: G.F,                                                              away: G.E },
+  { id:"r32_10", label:"1H vs 2G",     home: G.H,                                                              away: G.G },
+  { id:"r32_11", label:"1J vs 2I",     home: G.J,                                                              away: G.I },
+  { id:"r32_12", label:"1L vs 2K",     home: G.L,                                                              away: G.K },
+  // 3rd place slots — home = group winner, away = best 3rd from candidate groups
+  { id:"r32_13", label:"1E vs best 3rd (A/B/C/D/F)", home: G.E, away: [...G.A,...G.B,...G.C,...G.D,...G.F] },
+  { id:"r32_14", label:"1I vs best 3rd (C/D/F/G/H)", home: G.I, away: [...G.C,...G.D,...G.F,...G.G,...G.H] },
+  { id:"r32_15", label:"1A vs best 3rd (C/E/F/H/I)", home: G.A, away: [...G.C,...G.E,...G.F,...G.H,...G.I] },
+  { id:"r32_16", label:"1L vs best 3rd (E/H/I/J/K)", home: G.L, away: [...G.E,...G.H,...G.I,...G.J,...G.K] },
 ];
 
 export const R16_BRACKET = [
@@ -125,10 +128,10 @@ const R32_HOME_SLOT = {
   r32_10: { type:"1st", group:"H" },
   r32_11: { type:"1st", group:"J" },
   r32_12: { type:"1st", group:"L" },
-  r32_13: { type:"3rd", groups:["A","B","C","D","E","F"] },
-  r32_14: { type:"3rd", groups:["A","B","C","D","E","F"] },
-  r32_15: { type:"3rd", groups:["G","H","I","J","K","L"] },
-  r32_16: { type:"3rd", groups:["G","H","I","J","K","L"] },
+  r32_13: { type:"1st", group:"E" },
+  r32_14: { type:"1st", group:"I" },
+  r32_15: { type:"1st", group:"A" },
+  r32_16: { type:"1st", group:"L" },
 };
 
 const R32_AWAY_SLOT = {
@@ -144,10 +147,10 @@ const R32_AWAY_SLOT = {
   r32_10: { type:"2nd", group:"G" },
   r32_11: { type:"2nd", group:"I" },
   r32_12: { type:"2nd", group:"K" },
-  r32_13: { type:"3rd", groups:["G","H","I","J","K","L"] },
-  r32_14: { type:"3rd", groups:["G","H","I","J","K","L"] },
-  r32_15: { type:"3rd", groups:["A","B","C","D","E","F"] },
-  r32_16: { type:"3rd", groups:["A","B","C","D","E","F"] },
+  r32_13: { type:"3rd", groups:["A","B","C","D","F"] },
+  r32_14: { type:"3rd", groups:["C","D","F","G","H"] },
+  r32_15: { type:"3rd", groups:["C","E","F","H","I"] },
+  r32_16: { type:"3rd", groups:["E","H","I","J","K"] },
 };
 
 function inferSlotTeam(slot, groupStandings) {
