@@ -131,23 +131,26 @@ export function generateGroupMatches() {
 
 // Knockout rounds with official bracket labels
 export const KNOCKOUT_TEMPLATE = [
-  // Round of 32 — official FIFA bracket pairings
-  { id:"r32_1",  stage:"Round of 32", label:"1A vs 2B", home:"1st Group A", away:"2nd Group B", result:null },
-  { id:"r32_2",  stage:"Round of 32", label:"1C vs 2D", home:"1st Group C", away:"2nd Group D", result:null },
-  { id:"r32_3",  stage:"Round of 32", label:"1E vs 2F", home:"1st Group E", away:"2nd Group F", result:null },
-  { id:"r32_4",  stage:"Round of 32", label:"1G vs 2H", home:"1st Group G", away:"2nd Group H", result:null },
-  { id:"r32_5",  stage:"Round of 32", label:"1I vs 2J", home:"1st Group I", away:"2nd Group J", result:null },
-  { id:"r32_6",  stage:"Round of 32", label:"1K vs 2L", home:"1st Group K", away:"2nd Group L", result:null },
-  { id:"r32_7",  stage:"Round of 32", label:"1B vs 2A", home:"1st Group B", away:"2nd Group A", result:null },
-  { id:"r32_8",  stage:"Round of 32", label:"1D vs 2C", home:"1st Group D", away:"2nd Group C", result:null },
-  { id:"r32_9",  stage:"Round of 32", label:"1F vs 2E", home:"1st Group F", away:"2nd Group E", result:null },
-  { id:"r32_10", stage:"Round of 32", label:"1H vs 2G", home:"1st Group H", away:"2nd Group G", result:null },
-  { id:"r32_11", stage:"Round of 32", label:"1J vs 2I", home:"1st Group J", away:"2nd Group I", result:null },
-  { id:"r32_12", stage:"Round of 32", label:"1L vs 2K", home:"1st Group L", away:"2nd Group K", result:null },
-  { id:"r32_13", stage:"Round of 32", label:"3rd best (1)", home:"Best 3rd #1", away:"Best 3rd #2", result:null },
-  { id:"r32_14", stage:"Round of 32", label:"3rd best (2)", home:"Best 3rd #3", away:"Best 3rd #4", result:null },
-  { id:"r32_15", stage:"Round of 32", label:"3rd best (3)", home:"Best 3rd #5", away:"Best 3rd #6", result:null },
-  { id:"r32_16", stage:"Round of 32", label:"3rd best (4)", home:"Best 3rd #7", away:"Best 3rd #8", result:null },
+  // Round of 32
+  // Matches 1-12: Group winners vs runners-up (fixed pairings)
+  { id:"r32_1",  stage:"Round of 32", label:"1A vs 2B",  home:"1st Group A", away:"2nd Group B", result:null },
+  { id:"r32_2",  stage:"Round of 32", label:"1C vs 2D",  home:"1st Group C", away:"2nd Group D", result:null },
+  { id:"r32_3",  stage:"Round of 32", label:"1E vs 2F",  home:"1st Group E", away:"2nd Group F", result:null },
+  { id:"r32_4",  stage:"Round of 32", label:"1G vs 2H",  home:"1st Group G", away:"2nd Group H", result:null },
+  { id:"r32_5",  stage:"Round of 32", label:"1I vs 2J",  home:"1st Group I", away:"2nd Group J", result:null },
+  { id:"r32_6",  stage:"Round of 32", label:"1K vs 2L",  home:"1st Group K", away:"2nd Group L", result:null },
+  { id:"r32_7",  stage:"Round of 32", label:"1B vs 2A",  home:"1st Group B", away:"2nd Group A", result:null },
+  { id:"r32_8",  stage:"Round of 32", label:"1D vs 2C",  home:"1st Group D", away:"2nd Group C", result:null },
+  { id:"r32_9",  stage:"Round of 32", label:"1F vs 2E",  home:"1st Group F", away:"2nd Group E", result:null },
+  { id:"r32_10", stage:"Round of 32", label:"1H vs 2G",  home:"1st Group H", away:"2nd Group G", result:null },
+  { id:"r32_11", stage:"Round of 32", label:"1J vs 2I",  home:"1st Group J", away:"2nd Group I", result:null },
+  { id:"r32_12", stage:"Round of 32", label:"1L vs 2K",  home:"1st Group L", away:"2nd Group K", result:null },
+  // Matches 13-16: Group winners vs best 3rd place teams
+  // FIFA determines exact pairings after group stage based on which 8 third-place teams qualify
+  { id:"r32_13", stage:"Round of 32", label:"Group winner vs best 3rd #1", home:"Group winner (TBD)", away:"Best 3rd placed team #1", result:null },
+  { id:"r32_14", stage:"Round of 32", label:"Group winner vs best 3rd #2", home:"Group winner (TBD)", away:"Best 3rd placed team #2", result:null },
+  { id:"r32_15", stage:"Round of 32", label:"Group winner vs best 3rd #3", home:"Group winner (TBD)", away:"Best 3rd placed team #3", result:null },
+  { id:"r32_16", stage:"Round of 32", label:"Group winner vs best 3rd #4", home:"Group winner (TBD)", away:"Best 3rd placed team #4", result:null },
   // Round of 16
   { id:"r16_1", stage:"Round of 16", label:"W r32_1 vs W r32_2", home:"W Match 1", away:"W Match 2", result:null },
   { id:"r16_2", stage:"Round of 16", label:"W r32_3 vs W r32_4", home:"W Match 3", away:"W Match 4", result:null },
