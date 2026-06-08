@@ -184,42 +184,59 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     };
   });
 
-  // 3. Helper: infer winner of a match
+  // 3. Helper: infer winner of a match — ONLY if that match has been filled in
   function inferWinner(matchId, preds, inferred) {
     const p = preds?.[matchId];
-    const inf = inferred?.[matchId];
-    if (p?.homeTeam && p?.awayTeam && p?.homeGoals !== undefined && p?.awayGoals !== undefined) {
+    // Only suggest if the user has actually picked both teams AND a score for this match
+    const hasTeams = p?.homeTeam && p?.awayTeam;
+    const hasScore = p?.homeGoals !== undefined && p?.homeGoals !== "" &&
+                     p?.awayGoals !== undefined && p?.awayGoals !== "";
+    if (hasTeams && hasScore) {
       const hg = parseInt(p.homeGoals), ag = parseInt(p.awayGoals);
       if (!isNaN(hg) && !isNaN(ag)) return hg >= ag ? p.homeTeam : p.awayTeam;
     }
-    // No score yet — use home team as default suggestion
-    return p?.homeTeam || inf?.home || null;
+    // If teams picked but no score yet, use the picked home team
+    if (hasTeams) return p.homeTeam;
+    // No prediction at all — return null (no suggestion)
+    return null;
   }
 
-  // 4. Infer R16
+  // 4. Infer R16 — only suggest if BOTH feeding R32 matches are filled
   const r16Inferred = {};
   R16_BRACKET.forEach(m => {
+    const homeR32Pred = knockoutPreds?.[m.homeR32];
+    const awayR32Pred = knockoutPreds?.[m.awayR32];
+    const homeR32Filled = homeR32Pred?.homeTeam && homeR32Pred?.awayTeam;
+    const awayR32Filled = awayR32Pred?.homeTeam && awayR32Pred?.awayTeam;
     r16Inferred[m.id] = {
-      home: inferWinner(m.homeR32, knockoutPreds, r32Inferred),
-      away: inferWinner(m.awayR32, knockoutPreds, r32Inferred),
+      home: homeR32Filled ? inferWinner(m.homeR32, knockoutPreds, {}) : null,
+      away: awayR32Filled ? inferWinner(m.awayR32, knockoutPreds, {}) : null,
     };
   });
 
-  // 5. Infer QF
+  // 5. Infer QF — only suggest if BOTH feeding R16 matches are filled
   const qfInferred = {};
   QF_BRACKET.forEach(m => {
+    const homeR16Pred = knockoutPreds?.[m.homeR16];
+    const awayR16Pred = knockoutPreds?.[m.awayR16];
+    const homeR16Filled = homeR16Pred?.homeTeam && homeR16Pred?.awayTeam;
+    const awayR16Filled = awayR16Pred?.homeTeam && awayR16Pred?.awayTeam;
     qfInferred[m.id] = {
-      home: inferWinner(m.homeR16, knockoutPreds, r16Inferred),
-      away: inferWinner(m.awayR16, knockoutPreds, r16Inferred),
+      home: homeR16Filled ? inferWinner(m.homeR16, knockoutPreds, {}) : null,
+      away: awayR16Filled ? inferWinner(m.awayR16, knockoutPreds, {}) : null,
     };
   });
 
-  // 6. Infer SF
+  // 6. Infer SF — only suggest if BOTH feeding QF matches are filled
   const sfInferred = {};
   SF_BRACKET.forEach(m => {
+    const homeQFPred = knockoutPreds?.[m.homeQF];
+    const awayQFPred = knockoutPreds?.[m.awayQF];
+    const homeQFFilled = homeQFPred?.homeTeam && homeQFPred?.awayTeam;
+    const awayQFFilled = awayQFPred?.homeTeam && awayQFPred?.awayTeam;
     sfInferred[m.id] = {
-      home: inferWinner(m.homeQF, knockoutPreds, qfInferred),
-      away: inferWinner(m.awayQF, knockoutPreds, qfInferred),
+      home: homeQFFilled ? inferWinner(m.homeQF, knockoutPreds, {}) : null,
+      away: awayQFFilled ? inferWinner(m.awayQF, knockoutPreds, {}) : null,
     };
   });
 
