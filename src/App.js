@@ -483,7 +483,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
         {activeStage === "knockout" && (
           <div>
             <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
-              <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>💡 Only realistic teams shown. ✨ = auto-suggested from your group predictions.</p>
+              <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>💡 Tap each dropdown to select a team. ✨ = auto-suggested from your group predictions — tap to confirm!</p>
             </div>
             {stages.map(stage => (
               <div key={stage} style={{ marginBottom:20 }}>
@@ -518,7 +518,8 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                             </div>
                           ) : (
                             <select className="inp" value={homeVal} style={{ borderColor: pred.homeTeam ? "var(--ok)" : homeIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setHomeTeam(e.target.value)}>
-                              <option value="">{homeIsAuto ? `✨ Suggested: ${sug.home}` : "Select team..."}</option>
+                              <option value="">{homeIsAuto ? `👆 Tap to pick — suggested: ${sug.home}` : "👆 Tap to select team..."}</option>
+                              {homeIsAuto && <option value={sug.home}>✨ {sug.home} (suggested)</option>}
                               {eligible.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
                           )}
@@ -548,7 +549,8 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                             </div>
                           ) : (
                             <select className="inp" value={awayVal} style={{ borderColor: pred.awayTeam ? "var(--ok)" : awayIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setAwayTeam(e.target.value)}>
-                              <option value="">{awayIsAuto ? `✨ Suggested: ${sug.away}` : "Select team..."}</option>
+                              <option value="">{awayIsAuto ? `👆 Tap to pick — suggested: ${sug.away}` : "👆 Tap to select team..."}</option>
+                              {awayIsAuto && <option value={sug.away}>✨ {sug.away} (suggested)</option>}
                               {eligible.filter(t => t !== homeVal).map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
                           )}
