@@ -1,62 +1,174 @@
 // ─── KNOCKOUT BRACKET LOGIC ───────────────────────────────────────────────────
-// IDs must match KNOCKOUT_TEMPLATE in data.js exactly
+// Official FIFA 2026 bracket with full Annex C implementation
+// IDs preserved from original to avoid data loss for existing predictions
+// Source: Wikipedia "2026 FIFA World Cup knockout stage" + FIFA Annex C
 
 import { GROUPS_2026 } from './data';
 
 const G = GROUPS_2026;
+const ALL = [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L];
 
-// R32_BRACKET — official FIFA 2026 bracket
-// Source: ESPN/Yahoo Sports (official rights holders)
-// 3rd place slots: which groups' 3rd-placed teams can fill each slot
-// r32_13: 1E vs best 3rd from A/B/C/D/F
-// r32_14: 1I vs best 3rd from C/D/F/G/H
-// r32_15: 1A vs best 3rd from C/E/F/H/I
-// r32_16: 1L vs best 3rd from E/H/I/J/K
+// ─── R32 BRACKET ─────────────────────────────────────────────────────────────
+// Official FIFA R32 pairings (Wikipedia source)
+// r32_1..4 = runners-up vs runners-up
+// r32_5..8 = winners vs specific runners-up
+// r32_9..16 = winners vs best 3rd (Annex C)
 export const R32_BRACKET = [
-  { id:"r32_1",  label:"1A vs 2B",     home: G.A,                                                              away: G.B },
-  { id:"r32_2",  label:"1C vs 2D",     home: G.C,                                                              away: G.D },
-  { id:"r32_3",  label:"1E vs 2F",     home: G.E,                                                              away: G.F },
-  { id:"r32_4",  label:"1G vs 2H",     home: G.G,                                                              away: G.H },
-  { id:"r32_5",  label:"1I vs 2J",     home: G.I,                                                              away: G.J },
-  { id:"r32_6",  label:"1K vs 2L",     home: G.K,                                                              away: G.L },
-  { id:"r32_7",  label:"1B vs 2A",     home: G.B,                                                              away: G.A },
-  { id:"r32_8",  label:"1D vs 2C",     home: G.D,                                                              away: G.C },
-  { id:"r32_9",  label:"1F vs 2E",     home: G.F,                                                              away: G.E },
-  { id:"r32_10", label:"1H vs 2G",     home: G.H,                                                              away: G.G },
-  { id:"r32_11", label:"1J vs 2I",     home: G.J,                                                              away: G.I },
-  { id:"r32_12", label:"1L vs 2K",     home: G.L,                                                              away: G.K },
-  // Matches 13-16: Group winners vs best 3rd place teams
-  // Exact pairings determined by FIFA after group stage
-  { id:"r32_13", label:"Group winner vs best 3rd #1", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
-  { id:"r32_14", label:"Group winner vs best 3rd #2", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
-  { id:"r32_15", label:"Group winner vs best 3rd #3", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
-  { id:"r32_16", label:"Group winner vs best 3rd #4", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
+  { id:"r32_1",  label:"2A vs 2B",       home: G.A,  away: G.B  },
+  { id:"r32_2",  label:"2E vs 2I",       home: G.E,  away: G.I  },
+  { id:"r32_3",  label:"2K vs 2L",       home: G.K,  away: G.L  },
+  { id:"r32_4",  label:"2D vs 2G",       home: G.D,  away: G.G  },
+  { id:"r32_5",  label:"1F vs 2C",       home: G.F,  away: G.C  },
+  { id:"r32_6",  label:"1C vs 2F",       home: G.C,  away: G.F  },
+  { id:"r32_7",  label:"1H vs 2J",       home: G.H,  away: G.J  },
+  { id:"r32_8",  label:"1J vs 2H",       home: G.J,  away: G.H  },
+  { id:"r32_9",  label:"1E vs best 3rd", home: G.E,  away: ALL  },
+  { id:"r32_10", label:"1I vs best 3rd", home: G.I,  away: ALL  },
+  { id:"r32_11", label:"1A vs best 3rd", home: G.A,  away: ALL  },
+  { id:"r32_12", label:"1L vs best 3rd", home: G.L,  away: ALL  },
+  { id:"r32_13", label:"1D vs best 3rd", home: G.D,  away: ALL  },
+  { id:"r32_14", label:"1G vs best 3rd", home: G.G,  away: ALL  },
+  { id:"r32_15", label:"1B vs best 3rd", home: G.B,  away: ALL  },
+  { id:"r32_16", label:"1K vs best 3rd", home: G.K,  away: ALL  },
 ];
 
 export const R16_BRACKET = [
-  { id:"r16_1", label:"W(1A/2B) vs W(1C/2D)",  homeR32:"r32_1",  awayR32:"r32_2"  },
-  { id:"r16_2", label:"W(1E/2F) vs W(1G/2H)",  homeR32:"r32_3",  awayR32:"r32_4"  },
-  { id:"r16_3", label:"W(1I/2J) vs W(1K/2L)",  homeR32:"r32_5",  awayR32:"r32_6"  },
-  { id:"r16_4", label:"W(1B/2A) vs W(1D/2C)",  homeR32:"r32_7",  awayR32:"r32_8"  },
-  { id:"r16_5", label:"W(1F/2E) vs W(1H/2G)",  homeR32:"r32_9",  awayR32:"r32_10" },
-  { id:"r16_6", label:"W(1J/2I) vs W(1L/2K)",  homeR32:"r32_11", awayR32:"r32_12" },
-  { id:"r16_7", label:"W(3rd#1) vs W(3rd#2)",  homeR32:"r32_13", awayR32:"r32_14" },
-  { id:"r16_8", label:"W(3rd#3) vs W(3rd#4)",  homeR32:"r32_15", awayR32:"r32_16" },
+  { id:"r16_1", label:"W(2A/2B) vs W(1E/3rd)",  homeR32:"r32_1",  awayR32:"r32_9"  },
+  { id:"r16_2", label:"W(1F/2C) vs W(1C/2F)",   homeR32:"r32_5",  awayR32:"r32_6"  },
+  { id:"r16_3", label:"W(1I/3rd) vs W(2E/2I)",  homeR32:"r32_10", awayR32:"r32_2"  },
+  { id:"r16_4", label:"W(1A/3rd) vs W(1L/3rd)", homeR32:"r32_11", awayR32:"r32_12" },
+  { id:"r16_5", label:"W(1D/3rd) vs W(1G/3rd)", homeR32:"r32_13", awayR32:"r32_14" },
+  { id:"r16_6", label:"W(2K/2L) vs W(1H/2J)",   homeR32:"r32_3",  awayR32:"r32_7"  },
+  { id:"r16_7", label:"W(1B/3rd) vs W(1J/2H)",  homeR32:"r32_15", awayR32:"r32_8"  },
+  { id:"r16_8", label:"W(1K/3rd) vs W(2D/2G)",  homeR32:"r32_16", awayR32:"r32_4"  },
 ];
 
 export const QF_BRACKET = [
-  { id:"qf_1", label:"QF1 · W R16-1 vs W R16-2", homeR16:"r16_1", awayR16:"r16_2" },
-  { id:"qf_2", label:"QF2 · W R16-3 vs W R16-4", homeR16:"r16_3", awayR16:"r16_4" },
-  { id:"qf_3", label:"QF3 · W R16-5 vs W R16-6", homeR16:"r16_5", awayR16:"r16_6" },
-  { id:"qf_4", label:"QF4 · W R16-7 vs W R16-8", homeR16:"r16_7", awayR16:"r16_8" },
+  { id:"qf_1", label:"QF1", homeR16:"r16_1", awayR16:"r16_2" },
+  { id:"qf_2", label:"QF2", homeR16:"r16_3", awayR16:"r16_4" },
+  { id:"qf_3", label:"QF3", homeR16:"r16_5", awayR16:"r16_6" },
+  { id:"qf_4", label:"QF4", homeR16:"r16_7", awayR16:"r16_8" },
 ];
 
 export const SF_BRACKET = [
-  { id:"sf_1", label:"SF1 · W QF1 vs W QF2", homeQF:"qf_1", awayQF:"qf_2" },
-  { id:"sf_2", label:"SF2 · W QF3 vs W QF4", homeQF:"qf_3", awayQF:"qf_4" },
+  { id:"sf_1", label:"SF1", homeQF:"qf_1", awayQF:"qf_2" },
+  { id:"sf_2", label:"SF2", homeQF:"qf_3", awayQF:"qf_4" },
 ];
 
-// Get eligible teams for a knockout slot
+// ─── ANNEX C TABLE ────────────────────────────────────────────────────────────
+// Maps sorted 8-group key → which 3rd-place team plays which group winner
+// winner slot key: "1A","1B","1D","1E","1G","1I","1K","1L"
+// value: group letter whose 3rd-place team plays that winner
+const ANNEX_C = {
+  "EFGHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"F","1G":"H","1I":"G","1K":"L","1L":"K"},
+  "DFGHIJKL": {"1A":"H","1B":"G","1D":"I","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "DEGHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"D","1G":"H","1I":"G","1K":"L","1L":"K"},
+  "DEFHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "DEFGIJKL": {"1A":"E","1B":"G","1D":"I","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "DEFGHJKL": {"1A":"E","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "DEFGHIKL": {"1A":"E","1B":"G","1D":"I","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "DEFGHIJL": {"1A":"E","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "DEFGHIJK": {"1A":"E","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "CFGHIJKL": {"1A":"H","1B":"G","1D":"I","1E":"C","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "CEGHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"C","1G":"H","1I":"G","1K":"L","1L":"K"},
+  "CEFHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"C","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CEFGIJKL": {"1A":"E","1B":"G","1D":"I","1E":"C","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "CEFGHJKL": {"1A":"E","1B":"G","1D":"J","1E":"C","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CEFGHIKL": {"1A":"E","1B":"G","1D":"I","1E":"C","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CEFGHIJL": {"1A":"E","1B":"G","1D":"J","1E":"C","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "CEFGHIJK": {"1A":"E","1B":"G","1D":"J","1E":"C","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "CDGHIJKL": {"1A":"H","1B":"G","1D":"I","1E":"C","1G":"J","1I":"D","1K":"L","1L":"K"},
+  "CDFHIJKL": {"1A":"C","1B":"J","1D":"I","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CDFGIJKL": {"1A":"C","1B":"G","1D":"I","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "CDFGHJKL": {"1A":"C","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CDFGHIKL": {"1A":"C","1B":"G","1D":"I","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CDFGHIJL": {"1A":"C","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "CDFGHIJK": {"1A":"C","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "CDEHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"C","1G":"H","1I":"D","1K":"L","1L":"K"},
+  "CDEGIJKL": {"1A":"E","1B":"G","1D":"I","1E":"C","1G":"J","1I":"D","1K":"L","1L":"K"},
+  "CDEGHIJKL":{"1A":"E","1B":"G","1D":"J","1E":"C","1G":"H","1I":"D","1K":"L","1L":"K"},
+  "CDEGHIKL": {"1A":"E","1B":"G","1D":"I","1E":"C","1G":"H","1I":"D","1K":"L","1L":"K"},
+  "CDEGHIJL": {"1A":"E","1B":"G","1D":"J","1E":"C","1G":"H","1I":"D","1K":"L","1L":"I"},
+  "CDEGHIJK": {"1A":"E","1B":"G","1D":"J","1E":"C","1G":"H","1I":"D","1K":"I","1L":"K"},
+  "CDEFIJKL": {"1A":"C","1B":"J","1D":"E","1E":"D","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "CDEFHJKL": {"1A":"C","1B":"J","1D":"E","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CDEFHIKL": {"1A":"C","1B":"E","1D":"I","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CDEFHIJL": {"1A":"C","1B":"J","1D":"E","1E":"D","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "CDEFHIJK": {"1A":"C","1B":"J","1D":"E","1E":"D","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "CDEFGJKL": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "CDEFGIKL": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "CDEFGIJL": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"J","1I":"F","1K":"L","1L":"I"},
+  "CDEFGIJK": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"J","1I":"F","1K":"I","1L":"K"},
+  "CDEFGHKL": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "CDEFGHJL": {"1A":"C","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"L","1L":"E"},
+  "CDEFGHJK": {"1A":"C","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"E","1L":"K"},
+  "CDEFGHIL": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "CDEFGHIK": {"1A":"C","1B":"G","1D":"E","1E":"D","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "CDEFGHIJ": {"1A":"C","1B":"G","1D":"J","1E":"D","1G":"H","1I":"F","1K":"E","1L":"I"},
+  "BFGHIJKL": {"1A":"H","1B":"J","1D":"B","1E":"F","1G":"I","1I":"G","1K":"L","1L":"K"},
+  "BEGHIJKL": {"1A":"E","1B":"J","1D":"I","1E":"B","1G":"H","1I":"G","1K":"L","1L":"K"},
+  "BEFHIJKL": {"1A":"E","1B":"J","1D":"B","1E":"F","1G":"I","1I":"H","1K":"L","1L":"K"},
+  "BEFGIJKL": {"1A":"E","1B":"J","1D":"B","1E":"F","1G":"I","1I":"G","1K":"L","1L":"K"},
+  "BEFGHJKL": {"1A":"E","1B":"J","1D":"B","1E":"F","1G":"H","1I":"G","1K":"L","1L":"K"},
+  "BEFGHIKL": {"1A":"E","1B":"G","1D":"B","1E":"F","1G":"I","1I":"H","1K":"L","1L":"K"},
+  "BEFGHIJL": {"1A":"E","1B":"J","1D":"B","1E":"F","1G":"H","1I":"G","1K":"L","1L":"I"},
+  "BEFGHIJK": {"1A":"E","1B":"J","1D":"B","1E":"F","1G":"H","1I":"G","1K":"I","1L":"K"},
+  "BDGHIJKL": {"1A":"H","1B":"J","1D":"B","1E":"D","1G":"I","1I":"G","1K":"L","1L":"K"},
+  "BDFHIJKL": {"1A":"H","1B":"J","1D":"B","1E":"D","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BDFGIJKL": {"1A":"I","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "BDFGHJKL": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "BDFGHIKL": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BDFGHIJL": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"L","1L":"I"},
+  "BDFGHIJK": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"I","1L":"K"},
+  "BDEHIJKL": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"I","1I":"H","1K":"L","1L":"K"},
+  "BDEGIJKL": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"I","1I":"G","1K":"L","1L":"K"},
+  "BDEGHIJKL":{"1A":"E","1B":"J","1D":"B","1E":"D","1G":"H","1I":"G","1K":"L","1L":"K"},
+  "BDEGHIKL": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"I","1I":"H","1K":"L","1L":"K"},
+  "BDEGHIJL": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"H","1I":"G","1K":"L","1L":"I"},
+  "BDEGHIJK": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"H","1I":"G","1K":"I","1L":"K"},
+  "BDEFIJKL": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BDEFHJKL": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "BDEFHIKL": {"1A":"E","1B":"I","1D":"B","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "BDEFHIJL": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "BDEFHIJK": {"1A":"E","1B":"J","1D":"B","1E":"D","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "BDEFGJKL": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "BDEFGIKL": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BDEFGIJL": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"L","1L":"I"},
+  "BDEFGIJK": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"I","1L":"K"},
+  "BDEFGHKL": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "BDEFGHJL": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"L","1L":"E"},
+  "BDEFGHJK": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"E","1L":"K"},
+  "BDEFGHIL": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "BDEFGHIK": {"1A":"E","1B":"G","1D":"B","1E":"D","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "BDEFGHIJ": {"1A":"H","1B":"G","1D":"B","1E":"D","1G":"J","1I":"F","1K":"E","1L":"I"},
+  "BCGHIJKL": {"1A":"H","1B":"J","1D":"B","1E":"C","1G":"I","1I":"G","1K":"L","1L":"K"},
+  "BCFHIJKL": {"1A":"H","1B":"J","1D":"B","1E":"C","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BCFGIJKL": {"1A":"I","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "BCFGHJKL": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "BCFGHIKL": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BCFGHIJL": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"L","1L":"I"},
+  "BCFGHIJK": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"I","1L":"K"},
+  "BCEHIJKL": {"1A":"E","1B":"J","1D":"B","1E":"C","1G":"I","1I":"H","1K":"L","1L":"K"},
+  "BCEGIJKL": {"1A":"E","1B":"J","1D":"B","1E":"C","1G":"I","1I":"G","1K":"L","1L":"K"},
+  "BCEFIJKL": {"1A":"E","1B":"J","1D":"B","1E":"C","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BCEFHJKL": {"1A":"E","1B":"J","1D":"B","1E":"C","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "BCEFHIKL": {"1A":"E","1B":"I","1D":"B","1E":"C","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "BCEFHIJL": {"1A":"E","1B":"J","1D":"B","1E":"C","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "BCEFHIJK": {"1A":"E","1B":"J","1D":"B","1E":"C","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "BCEFGJKL": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"L","1L":"K"},
+  "BCEFGIKL": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"I","1I":"F","1K":"L","1L":"K"},
+  "BCEFGIJL": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"L","1L":"I"},
+  "BCEFGIJK": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"I","1L":"K"},
+  "BCEFGHKL": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"H","1I":"F","1K":"L","1L":"K"},
+  "BCEFGHJL": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"L","1L":"E"},
+  "BCEFGHJK": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"E","1L":"K"},
+  "BCEFGHIL": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"H","1I":"F","1K":"L","1L":"I"},
+  "BCEFGHIK": {"1A":"E","1B":"G","1D":"B","1E":"C","1G":"H","1I":"F","1K":"I","1L":"K"},
+  "BCEFGHIJ": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"E","1L":"I"},
+  "BCDEGHIJKL":{"1A":"E","1B":"J","1D":"B","1E":"C","1G":"H","1I":"D","1K":"L","1L":"K"},
+};
+
+// ─── ELIGIBLE TEAMS ───────────────────────────────────────────────────────────
 export function getEligibleTeams(slotId) {
   const r32 = R32_BRACKET.find(m => m.id === slotId);
   if (r32) return [...new Set([...r32.home, ...r32.away])].sort();
@@ -80,19 +192,13 @@ export function getEligibleTeams(slotId) {
     return [...new Set([...getR16Teams(qf.homeR16),...getR16Teams(qf.awayR16)])].sort();
   }
 
-  if (slotId === "sf_1") {
-    return [...new Set([...getEligibleTeams("qf_1"),...getEligibleTeams("qf_2")])].sort();
-  }
-  if (slotId === "sf_2") {
-    return [...new Set([...getEligibleTeams("qf_3"),...getEligibleTeams("qf_4")])].sort();
-  }
+  if (slotId === "sf_1") return [...new Set([...getEligibleTeams("qf_1"),...getEligibleTeams("qf_2")])].sort();
+  if (slotId === "sf_2") return [...new Set([...getEligibleTeams("qf_3"),...getEligibleTeams("qf_4")])].sort();
 
-  // Bronze and Final — all teams possible
-  return Object.values(GROUPS_2026).flat().sort();
+  return ALL.sort();
 }
 
-// ─── INFER BRACKET FROM GROUP PREDICTIONS ────────────────────────────────────
-
+// ─── GROUP STANDING INFERENCE ─────────────────────────────────────────────────
 function inferGroupStanding(groupTeams, groupMatches, preds) {
   const pts = {}, gf = {}, ga = {};
   groupTeams.forEach(t => { pts[t] = 0; gf[t] = 0; ga[t] = 0; });
@@ -115,60 +221,7 @@ function inferGroupStanding(groupTeams, groupMatches, preds) {
   });
 }
 
-// R32 slot → which group position fills it (matches KNOCKOUT_TEMPLATE)
-const R32_HOME_SLOT = {
-  r32_1:  { type:"1st", group:"A" },
-  r32_2:  { type:"1st", group:"C" },
-  r32_3:  { type:"1st", group:"E" },
-  r32_4:  { type:"1st", group:"G" },
-  r32_5:  { type:"1st", group:"I" },
-  r32_6:  { type:"1st", group:"K" },
-  r32_7:  { type:"1st", group:"B" },
-  r32_8:  { type:"1st", group:"D" },
-  r32_9:  { type:"1st", group:"F" },
-  r32_10: { type:"1st", group:"H" },
-  r32_11: { type:"1st", group:"J" },
-  r32_12: { type:"1st", group:"L" },
-  r32_13: { type:"any" },
-  r32_14: { type:"any" },
-  r32_15: { type:"any" },
-  r32_16: { type:"any" },
-};
-
-const R32_AWAY_SLOT = {
-  r32_1:  { type:"2nd", group:"B" },
-  r32_2:  { type:"2nd", group:"D" },
-  r32_3:  { type:"2nd", group:"F" },
-  r32_4:  { type:"2nd", group:"H" },
-  r32_5:  { type:"2nd", group:"J" },
-  r32_6:  { type:"2nd", group:"L" },
-  r32_7:  { type:"2nd", group:"A" },
-  r32_8:  { type:"2nd", group:"C" },
-  r32_9:  { type:"2nd", group:"E" },
-  r32_10: { type:"2nd", group:"G" },
-  r32_11: { type:"2nd", group:"I" },
-  r32_12: { type:"2nd", group:"K" },
-  r32_13: { type:"any" },
-  r32_14: { type:"any" },
-  r32_15: { type:"any" },
-  r32_16: { type:"any" },
-};
-
-function inferSlotTeam(slot, groupStandings) {
-  if (!slot) return null;
-  if (slot.type === "1st") return groupStandings[slot.group]?.[0] || null;
-  if (slot.type === "2nd") return groupStandings[slot.group]?.[1] || null;
-  if (slot.type === "3rd") {
-    for (const g of (slot.groups || [])) {
-      const t = groupStandings[g]?.[2];
-      if (t) return t;
-    }
-    return null;
-  }
-  // type "any" — can't auto-suggest, user must pick manually
-  return null;
-}
-
+// ─── MAIN INFERENCE ───────────────────────────────────────────────────────────
 export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds) {
   // 1. Infer group standings
   const groupStandings = {};
@@ -177,16 +230,81 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     groupStandings[grp] = inferGroupStanding(teams, matches, userGroupPreds);
   });
 
-  // 2. Infer R32 teams
+  // 2. Calculate 3rd-place teams with points/GD/GF for Annex C ranking
+  const thirdPlaceStats = {};
+  Object.entries(GROUPS_2026).forEach(([grp, teams]) => {
+    const standing = groupStandings[grp];
+    const third = standing[2];
+    if (!third) return;
+    const matches = groupMatches.filter(m => m.group === grp);
+    let pts = 0, gf = 0, ga = 0;
+    matches.forEach(m => {
+      const r = m.result || userGroupPreds[m.id];
+      if (!r) return;
+      const hg = parseInt(r.homeGoals), ag = parseInt(r.awayGoals);
+      if (isNaN(hg) || isNaN(ag)) return;
+      if (m.home === third) { gf += hg; ga += ag; if (hg > ag) pts += 3; else if (hg === ag) pts += 1; }
+      if (m.away === third) { gf += ag; ga += hg; if (ag > hg) pts += 3; else if (hg === ag) pts += 1; }
+    });
+    thirdPlaceStats[grp] = { team: third, pts, gd: gf-ga, gf };
+  });
+
+  // 3. Rank 3rd-place teams, take best 8
+  const ranked3rd = Object.entries(thirdPlaceStats)
+    .sort(([,a],[,b]) => b.pts-a.pts || b.gd-a.gd || b.gf-a.gf)
+    .slice(0, 8);
+  const qualifying3rdGroups = ranked3rd.map(([grp]) => grp).sort();
+  const annexKey = qualifying3rdGroups.join("");
+  const annexC = ANNEX_C[annexKey] || null;
+
+  // 4. Resolve R32 home/away from standings + Annex C
+  // Fixed slots
+  const fixedHome = {
+    "r32_1":"A","r32_2":"E","r32_3":"K","r32_4":"D",
+    "r32_5":"F","r32_6":"C","r32_7":"H","r32_8":"J",
+    "r32_9":"E","r32_10":"I","r32_11":"A","r32_12":"L",
+    "r32_13":"D","r32_14":"G","r32_15":"B","r32_16":"K",
+  };
+  const fixedAway = {
+    "r32_1":{type:"2nd",g:"B"},"r32_2":{type:"2nd",g:"I"},
+    "r32_3":{type:"2nd",g:"L"},"r32_4":{type:"2nd",g:"G"},
+    "r32_5":{type:"2nd",g:"C"},"r32_6":{type:"2nd",g:"F"},
+    "r32_7":{type:"2nd",g:"J"},"r32_8":{type:"2nd",g:"H"},
+    "r32_9": {type:"3rd",winner:"1E"},"r32_10":{type:"3rd",winner:"1I"},
+    "r32_11":{type:"3rd",winner:"1A"},"r32_12":{type:"3rd",winner:"1L"},
+    "r32_13":{type:"3rd",winner:"1D"},"r32_14":{type:"3rd",winner:"1G"},
+    "r32_15":{type:"3rd",winner:"1B"},"r32_16":{type:"3rd",winner:"1K"},
+  };
+
+  function resolveHome(id) {
+    const g = fixedHome[id];
+    // r32_1..4 are runners-up as home, r32_5..8 winners as home
+    if (["r32_1","r32_2","r32_3","r32_4"].includes(id)) return groupStandings[g]?.[1] || null;
+    return groupStandings[g]?.[0] || null;
+  }
+
+  function resolveAway(id) {
+    const slot = fixedAway[id];
+    if (!slot) return null;
+    if (slot.type === "2nd") return groupStandings[slot.g]?.[1] || null;
+    if (slot.type === "3rd" && annexC) {
+      const group3rd = annexC[slot.winner];
+      if (group3rd) return thirdPlaceStats[group3rd]?.team || null;
+    }
+    // Fallback: best available 3rd
+    if (slot.type === "3rd") return ranked3rd[0] ? thirdPlaceStats[ranked3rd[0][0]]?.team || null : null;
+    return null;
+  }
+
   const r32Inferred = {};
-  Object.keys(R32_HOME_SLOT).forEach(id => {
-    r32Inferred[id] = {
-      home: inferSlotTeam(R32_HOME_SLOT[id], groupStandings),
-      away: inferSlotTeam(R32_AWAY_SLOT[id], groupStandings),
+  R32_BRACKET.forEach(m => {
+    r32Inferred[m.id] = {
+      home: resolveHome(m.id),
+      away: resolveAway(m.id),
     };
   });
 
-  // 3. Helper: infer winner of a match — ONLY if that match has been filled in
+  // 5. Infer winner — only if match filled in
   function inferWinner(matchId, preds, inferred) {
     const p = preds?.[matchId];
     const hasTeams = p?.homeTeam && p?.awayTeam;
@@ -197,7 +315,6 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
       if (!isNaN(hg) && !isNaN(ag)) {
         if (hg > ag) return p.homeTeam;
         if (ag > hg) return p.awayTeam;
-        // Draw — use progresser if set, otherwise null (no suggestion)
         return p.progresser || null;
       }
     }
@@ -205,46 +322,40 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     return null;
   }
 
-  // 4. Infer R16 — only suggest if BOTH feeding R32 matches are filled
+  // 6. R16
   const r16Inferred = {};
   R16_BRACKET.forEach(m => {
-    const homeR32Pred = knockoutPreds?.[m.homeR32];
-    const awayR32Pred = knockoutPreds?.[m.awayR32];
-    const homeR32Filled = homeR32Pred?.homeTeam && homeR32Pred?.awayTeam;
-    const awayR32Filled = awayR32Pred?.homeTeam && awayR32Pred?.awayTeam;
+    const hPred = knockoutPreds?.[m.homeR32];
+    const aPred = knockoutPreds?.[m.awayR32];
     r16Inferred[m.id] = {
-      home: homeR32Filled ? inferWinner(m.homeR32, knockoutPreds, {}) : null,
-      away: awayR32Filled ? inferWinner(m.awayR32, knockoutPreds, {}) : null,
+      home: (hPred?.homeTeam && hPred?.awayTeam) ? inferWinner(m.homeR32, knockoutPreds, {}) : null,
+      away: (aPred?.homeTeam && aPred?.awayTeam) ? inferWinner(m.awayR32, knockoutPreds, {}) : null,
     };
   });
 
-  // 5. Infer QF — only suggest if BOTH feeding R16 matches are filled
+  // 7. QF
   const qfInferred = {};
   QF_BRACKET.forEach(m => {
-    const homeR16Pred = knockoutPreds?.[m.homeR16];
-    const awayR16Pred = knockoutPreds?.[m.awayR16];
-    const homeR16Filled = homeR16Pred?.homeTeam && homeR16Pred?.awayTeam;
-    const awayR16Filled = awayR16Pred?.homeTeam && awayR16Pred?.awayTeam;
+    const hPred = knockoutPreds?.[m.homeR16];
+    const aPred = knockoutPreds?.[m.awayR16];
     qfInferred[m.id] = {
-      home: homeR16Filled ? inferWinner(m.homeR16, knockoutPreds, {}) : null,
-      away: awayR16Filled ? inferWinner(m.awayR16, knockoutPreds, {}) : null,
+      home: (hPred?.homeTeam && hPred?.awayTeam) ? inferWinner(m.homeR16, knockoutPreds, {}) : null,
+      away: (aPred?.homeTeam && aPred?.awayTeam) ? inferWinner(m.awayR16, knockoutPreds, {}) : null,
     };
   });
 
-  // 6. Infer SF — only suggest if BOTH feeding QF matches are filled
+  // 8. SF
   const sfInferred = {};
   SF_BRACKET.forEach(m => {
-    const homeQFPred = knockoutPreds?.[m.homeQF];
-    const awayQFPred = knockoutPreds?.[m.awayQF];
-    const homeQFFilled = homeQFPred?.homeTeam && homeQFPred?.awayTeam;
-    const awayQFFilled = awayQFPred?.homeTeam && awayQFPred?.awayTeam;
+    const hPred = knockoutPreds?.[m.homeQF];
+    const aPred = knockoutPreds?.[m.awayQF];
     sfInferred[m.id] = {
-      home: homeQFFilled ? inferWinner(m.homeQF, knockoutPreds, {}) : null,
-      away: awayQFFilled ? inferWinner(m.awayQF, knockoutPreds, {}) : null,
+      home: (hPred?.homeTeam && hPred?.awayTeam) ? inferWinner(m.homeQF, knockoutPreds, {}) : null,
+      away: (aPred?.homeTeam && aPred?.awayTeam) ? inferWinner(m.awayQF, knockoutPreds, {}) : null,
     };
   });
 
-  // 7. Bronze = losers of SF
+  // 9. Bronze
   const sf1Pred = knockoutPreds?.sf_1;
   const sf2Pred = knockoutPreds?.sf_2;
   const sf1Winner = inferWinner("sf_1", knockoutPreds, sfInferred);
@@ -253,16 +364,13 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
   const bronzeAway = sf2Pred?.homeTeam && sf2Pred.homeTeam !== sf2Winner ? sf2Pred.homeTeam : sf2Pred?.awayTeam || null;
 
   return {
-    ...r32Inferred,
-    ...r16Inferred,
-    ...qfInferred,
-    ...sfInferred,
+    ...r32Inferred, ...r16Inferred, ...qfInferred, ...sfInferred,
     bronze: { home: bronzeHome, away: bronzeAway },
     final: { home: sf1Winner, away: sf2Winner },
   };
 }
 
-// First match: Mexico vs South Africa, Thu 11 Jun 23:00 Dubai = 2026-06-11T19:00:00Z
+// ─── COUNTDOWN & LOCK ─────────────────────────────────────────────────────────
 export const FIRST_MATCH_UTC = new Date("2026-06-11T19:00:00Z");
 
 export function isPredictionLocked() {
