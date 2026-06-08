@@ -25,11 +25,12 @@ export const R32_BRACKET = [
   { id:"r32_10", label:"1H vs 2G",     home: G.H,                                                              away: G.G },
   { id:"r32_11", label:"1J vs 2I",     home: G.J,                                                              away: G.I },
   { id:"r32_12", label:"1L vs 2K",     home: G.L,                                                              away: G.K },
-  // 3rd place slots — home = group winner, away = best 3rd from candidate groups
-  { id:"r32_13", label:"1E vs best 3rd (A/B/C/D/F)", home: G.E, away: [...G.A,...G.B,...G.C,...G.D,...G.F] },
-  { id:"r32_14", label:"1I vs best 3rd (C/D/F/G/H)", home: G.I, away: [...G.C,...G.D,...G.F,...G.G,...G.H] },
-  { id:"r32_15", label:"1A vs best 3rd (C/E/F/H/I)", home: G.A, away: [...G.C,...G.E,...G.F,...G.H,...G.I] },
-  { id:"r32_16", label:"1L vs best 3rd (E/H/I/J/K)", home: G.L, away: [...G.E,...G.H,...G.I,...G.J,...G.K] },
+  // Matches 13-16: Group winners vs best 3rd place teams
+  // Exact pairings determined by FIFA after group stage
+  { id:"r32_13", label:"Group winner vs best 3rd #1", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
+  { id:"r32_14", label:"Group winner vs best 3rd #2", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
+  { id:"r32_15", label:"Group winner vs best 3rd #3", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
+  { id:"r32_16", label:"Group winner vs best 3rd #4", home: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L], away: [...G.A,...G.B,...G.C,...G.D,...G.E,...G.F,...G.G,...G.H,...G.I,...G.J,...G.K,...G.L] },
 ];
 
 export const R16_BRACKET = [
@@ -128,10 +129,10 @@ const R32_HOME_SLOT = {
   r32_10: { type:"1st", group:"H" },
   r32_11: { type:"1st", group:"J" },
   r32_12: { type:"1st", group:"L" },
-  r32_13: { type:"1st", group:"E" },
-  r32_14: { type:"1st", group:"I" },
-  r32_15: { type:"1st", group:"A" },
-  r32_16: { type:"1st", group:"L" },
+  r32_13: { type:"any" },
+  r32_14: { type:"any" },
+  r32_15: { type:"any" },
+  r32_16: { type:"any" },
 };
 
 const R32_AWAY_SLOT = {
@@ -147,10 +148,10 @@ const R32_AWAY_SLOT = {
   r32_10: { type:"2nd", group:"G" },
   r32_11: { type:"2nd", group:"I" },
   r32_12: { type:"2nd", group:"K" },
-  r32_13: { type:"3rd", groups:["A","B","C","D","F"] },
-  r32_14: { type:"3rd", groups:["C","D","F","G","H"] },
-  r32_15: { type:"3rd", groups:["C","E","F","H","I"] },
-  r32_16: { type:"3rd", groups:["E","H","I","J","K"] },
+  r32_13: { type:"any" },
+  r32_14: { type:"any" },
+  r32_15: { type:"any" },
+  r32_16: { type:"any" },
 };
 
 function inferSlotTeam(slot, groupStandings) {
@@ -164,6 +165,7 @@ function inferSlotTeam(slot, groupStandings) {
     }
     return null;
   }
+  // type "any" — can't auto-suggest, user must pick manually
   return null;
 }
 
@@ -187,17 +189,19 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
   // 3. Helper: infer winner of a match — ONLY if that match has been filled in
   function inferWinner(matchId, preds, inferred) {
     const p = preds?.[matchId];
-    // Only suggest if the user has actually picked both teams AND a score for this match
     const hasTeams = p?.homeTeam && p?.awayTeam;
     const hasScore = p?.homeGoals !== undefined && p?.homeGoals !== "" &&
                      p?.awayGoals !== undefined && p?.awayGoals !== "";
     if (hasTeams && hasScore) {
       const hg = parseInt(p.homeGoals), ag = parseInt(p.awayGoals);
-      if (!isNaN(hg) && !isNaN(ag)) return hg >= ag ? p.homeTeam : p.awayTeam;
+      if (!isNaN(hg) && !isNaN(ag)) {
+        if (hg > ag) return p.homeTeam;
+        if (ag > hg) return p.awayTeam;
+        // Draw — use progresser if set, otherwise null (no suggestion)
+        return p.progresser || null;
+      }
     }
-    // If teams picked but no score yet, use the picked home team
     if (hasTeams) return p.homeTeam;
-    // No prediction at all — return null (no suggestion)
     return null;
   }
 
