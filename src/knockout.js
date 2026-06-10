@@ -1,9 +1,19 @@
 // ─── KNOCKOUT BRACKET LOGIC ───────────────────────────────────────────────────
 // Official FIFA 2026 bracket with smart dropdowns per match slot
+//
+// FIX 2026-06-10:
+// 1. 3rd-place slot assignment now works for ALL 495 group combinations:
+//    official Annex C table where we have it, constraint solver otherwise.
+//    The solver respects the official bracket constraints (each "best 3rd"
+//    slot only accepts 3rds from its 5 allowed groups), so suggestions are
+//    always in the dropdown, never duplicated, never vs own group winner.
+// 2. Suggestions are gated on completeness: 1st/2nd of a group are only
+//    suggested once ALL 6 matches of that group have a score; 3rd-place
+//    suggestions only once ALL 12 groups are complete (best-8 ranking is
+//    undefined before that).
 
 import { GROUPS_2026 } from './data';
 
-// Teams per group (for dropdowns)
 const G = GROUPS_2026;
 
 // ─── ANNEX C TABLE ────────────────────────────────────────────────────────────
@@ -118,6 +128,53 @@ const ANNEX_C = {
   "BCEFGHIJ": {"1A":"H","1B":"G","1D":"B","1E":"C","1G":"J","1I":"F","1K":"E","1L":"I"},
 };
 
+// Allowed 3rd-place candidate groups per winner slot — from the official
+// FIFA bracket ("1E vs best 3rd of A/B/C/D/F" etc.)
+const SLOT_ALLOWED_3RD = {
+  "1E": ["A","B","C","D","F"],
+  "1I": ["C","D","F","G","H"],
+  "1A": ["C","E","F","H","I"],
+  "1L": ["E","H","I","J","K"],
+  "1D": ["B","E","F","I","J"],
+  "1G": ["A","E","H","I","J"],
+  "1B": ["E","F","G","I","J"],
+  "1K": ["D","E","I","J","L"],
+};
+
+// Assign the 8 qualifying 3rd-place groups to the 8 winner slots.
+// 1) Combination in the official ANNEX_C table → use FIFA's exact mapping.
+// 2) Otherwise → backtracking search respecting SLOT_ALLOWED_3RD. This covers
+//    all 495 possible combinations (verified by test harness) and guarantees:
+//    suggestion is always in the dropdown's eligible list, no duplicates,
+//    no team vs its own group winner.
+export function assign3rdSlots(qualifyingGroups) {
+  if (!qualifyingGroups || qualifyingGroups.length !== 8) return null;
+  const key = [...qualifyingGroups].sort().join("");
+  if (ANNEX_C[key]) return ANNEX_C[key];
+
+  const qualSet = new Set(qualifyingGroups);
+  // Slots with fewest candidates first → faster, more robust backtracking
+  const slots = Object.keys(SLOT_ALLOWED_3RD).sort((a, b) =>
+    SLOT_ALLOWED_3RD[a].filter(g => qualSet.has(g)).length -
+    SLOT_ALLOWED_3RD[b].filter(g => qualSet.has(g)).length
+  );
+  const assigned = {};
+  const used = new Set();
+  function bt(i) {
+    if (i === slots.length) return true;
+    const slot = slots[i];
+    for (const g of SLOT_ALLOWED_3RD[slot]) {
+      if (qualSet.has(g) && !used.has(g)) {
+        used.add(g); assigned[slot] = g;
+        if (bt(i + 1)) return true;
+        used.delete(g); delete assigned[slot];
+      }
+    }
+    return false;
+  }
+  return bt(0) ? assigned : null;
+}
+
 // Which winner slot does each R32 "best 3rd" match correspond to?
 const R32_3RD_WINNER = {
   r32_2: "1E", r32_5: "1I", r32_7: "1A", r32_8: "1L",
@@ -231,6 +288,17 @@ function groupOutcome(h, a) {
   return "draw";
 }
 
+// A group's standings only count once ALL its matches have a score
+// (real result or user prediction)
+function isGroupComplete(groupMatches, preds) {
+  if (!groupMatches.length) return false;
+  return groupMatches.every(m => {
+    const r = m.result || preds[m.id];
+    if (!r) return false;
+    return !isNaN(parseInt(r.homeGoals)) && !isNaN(parseInt(r.awayGoals));
+  });
+}
+
 // Given predictions for all matches in a group, return standing [1st, 2nd, 3rd, 4th]
 function inferGroupStanding(groupTeams, groupMatches, preds) {
   // Build points table
@@ -300,19 +368,17 @@ const R32_AWAY_SLOT = {
   r32_16: { type:"2nd", group:"G" },
 };
 
-// Given all group standings, infer what team fills a slot
-function inferSlotTeam(slot, groupStandings) {
+// Given all group standings, infer what team fills a slot.
+// Only suggests when the slot's group is COMPLETE (all matches scored).
+function inferSlotTeam(slot, groupStandings, completeGroups) {
   if (!slot) return null;
-  if (slot.type === "1st") return groupStandings[slot.group]?.[0] || null;
-  if (slot.type === "2nd") return groupStandings[slot.group]?.[1] || null;
-  if (slot.type === "3rd") {
-    // Best 3rd from candidate groups — return 3rd of first group that has one
-    for (const g of (slot.groups || [])) {
-      const t = groupStandings[g]?.[2];
-      if (t) return t;
-    }
-    return null;
+  if (slot.type === "1st") {
+    return completeGroups.has(slot.group) ? (groupStandings[slot.group]?.[0] || null) : null;
   }
+  if (slot.type === "2nd") {
+    return completeGroups.has(slot.group) ? (groupStandings[slot.group]?.[1] || null) : null;
+  }
+  // type "3rd" is handled by resolve3rd in inferKnockoutBracket
   return null;
 }
 
@@ -320,57 +386,50 @@ function inferSlotTeam(slot, groupStandings) {
 // return suggested homeTeam/awayTeam for each knockout match
 export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds, realResults) {
   // 1. Infer group standings from predictions (falling back to real results)
+  //    Track which groups are complete — suggestions only come from those.
   const groupStandings = {};
+  const completeGroups = new Set();
   Object.entries(GROUPS_2026).forEach(([grp, teams]) => {
     const matches = groupMatches.filter(m => m.group === grp);
     groupStandings[grp] = inferGroupStanding(teams, matches, userGroupPreds);
+    if (isGroupComplete(matches, userGroupPreds)) completeGroups.add(grp);
   });
 
-  // 2. Compute 3rd-place teams and rank them per Annex C, then resolve slots
-  // Build stats for each group's 3rd-place team
+  // 2. 3rd-place assignment — only meaningful once ALL 12 groups are complete
+  //    (the best-8 ranking is undefined before that).
+  let slotAssignment = null;   // { "1E": "C", ... } winner slot → group of 3rd
   const thirdStats = {};
-  Object.entries(GROUPS_2026).forEach(([grp]) => {
-    const third = groupStandings[grp]?.[2];
-    if (!third) return;
-    let pts = 0, gf = 0, ga = 0;
-    groupMatches.filter(m => m.group === grp).forEach(m => {
-      const r = m.result || userGroupPreds[m.id];
-      if (!r) return;
-      const hg = parseInt(r.homeGoals), ag = parseInt(r.awayGoals);
-      if (isNaN(hg) || isNaN(ag)) return;
-      if (m.home === third) { gf += hg; ga += ag; if (hg > ag) pts += 3; else if (hg === ag) pts += 1; }
-      if (m.away === third) { gf += ag; ga += hg; if (ag > hg) pts += 3; else if (hg === ag) pts += 1; }
+  if (completeGroups.size === 12) {
+    Object.entries(GROUPS_2026).forEach(([grp]) => {
+      const third = groupStandings[grp]?.[2];
+      if (!third) return;
+      let pts = 0, gf = 0, ga = 0;
+      groupMatches.filter(m => m.group === grp).forEach(m => {
+        const r = m.result || userGroupPreds[m.id];
+        if (!r) return;
+        const hg = parseInt(r.homeGoals), ag = parseInt(r.awayGoals);
+        if (isNaN(hg) || isNaN(ag)) return;
+        if (m.home === third) { gf += hg; ga += ag; if (hg > ag) pts += 3; else if (hg === ag) pts += 1; }
+        if (m.away === third) { gf += ag; ga += hg; if (ag > hg) pts += 3; else if (hg === ag) pts += 1; }
+      });
+      thirdStats[grp] = { team: third, pts, gd: gf - ga, gf };
     });
-    thirdStats[grp] = { team: third, pts, gd: gf - ga, gf };
-  });
 
-  // Rank all 3rd-place teams, best 8 qualify
-  const ranked3rd = Object.entries(thirdStats)
-    .sort(([, a], [, b]) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
-    .slice(0, 8);
-  const annexKey = ranked3rd.map(([g]) => g).sort().join("");
-  const annexC = ANNEX_C[annexKey] || null;
-
-  // Fallback assignment: distribute the 8 qualifying 3rd-place teams across
-  // the 8 winner slots in a fixed order (no duplicates) when exact Annex C
-  // combination isn't in our table.
-  const winnerSlotOrder = ["1A","1B","1D","1E","1G","1I","1K","1L"];
-  const fallback3rd = {};
-  ranked3rd.forEach(([grp], i) => {
-    const slot = winnerSlotOrder[i];
-    if (slot) fallback3rd[slot] = thirdStats[grp]?.team || null;
-  });
+    // Rank all 12 third-place teams; best 8 qualify
+    // (points → goal difference → goals scored; remaining ties: group order,
+    //  which is deterministic — FIFA would use fair play points / lots)
+    const ranked3rd = Object.entries(thirdStats)
+      .sort(([, a], [, b]) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+      .slice(0, 8);
+    slotAssignment = assign3rdSlots(ranked3rd.map(([g]) => g));
+  }
 
   // Resolve which 3rd-place team plays a given winner slot
   function resolve3rd(matchId) {
     const winnerSlot = R32_3RD_WINNER[matchId];
-    if (!winnerSlot) return null;
-    if (annexC) {
-      const grp3rd = annexC[winnerSlot];
-      if (grp3rd) return thirdStats[grp3rd]?.team || null;
-    }
-    // Fallback: no-duplicate distribution
-    return fallback3rd[winnerSlot] || null;
+    if (!winnerSlot || !slotAssignment) return null;
+    const grp3rd = slotAssignment[winnerSlot];
+    return grp3rd ? (thirdStats[grp3rd]?.team || null) : null;
   }
 
   // 2b. Infer R32 teams
@@ -379,8 +438,8 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     const homeSlot = R32_HOME_SLOT[id];
     const awaySlot = R32_AWAY_SLOT[id];
     r32Inferred[id] = {
-      home: homeSlot?.type === "3rd" ? resolve3rd(id) : inferSlotTeam(homeSlot, groupStandings),
-      away: awaySlot?.type === "3rd" ? resolve3rd(id) : inferSlotTeam(awaySlot, groupStandings),
+      home: homeSlot?.type === "3rd" ? resolve3rd(id) : inferSlotTeam(homeSlot, groupStandings, completeGroups),
+      away: awaySlot?.type === "3rd" ? resolve3rd(id) : inferSlotTeam(awaySlot, groupStandings, completeGroups),
     };
   });
 
