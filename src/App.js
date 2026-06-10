@@ -6,7 +6,7 @@ import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox, SriDadsLogo
 } from './components';
 import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval, getRateLimitInfo } from './scoreSync';
-import { getEligibleTeams, getCountdown, isPredictionLocked, FIRST_MATCH_UTC, inferKnockoutBracket } from './knockout';
+import { getEligibleTeams, getCountdownTo, isPredictionLocked, FIRST_MATCH_UTC, KNOCKOUT_OPEN_UTC, KNOCKOUT_DEADLINE_UTC, isKnockoutOpen, isKnockoutLocked, inferKnockoutBracket } from './knockout';
 
 // ─── CONFETTI ─────────────────────────────────────────────────────────────────
 
@@ -51,37 +51,178 @@ function useResultFlash(shared) {
   return flash;
 }
 
-// ─── COUNTDOWN WIDGET ────────────────────────────────────────────────────────
+// ─── COUNTDOWN WIDGETS ───────────────────────────────────────────────────────
 
-function Countdown() {
-  const [cd, setCd] = useState(getCountdown());
+function CountdownChips({ target, color }) {
+  const [cd, setCd] = useState(getCountdownTo(target));
   useEffect(() => {
-    const t = setInterval(() => setCd(getCountdown()), 1000);
+    const t = setInterval(() => setCd(getCountdownTo(target)), 1000);
+    return () => clearInterval(t);
+  }, [target]);
+  if (!cd) return null;
+  const { days, hours, minutes, seconds } = cd;
+  return (
+    <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+      {[["days",days],["hrs",hours],["min",minutes],["sec",seconds]].map(([l,v]) => (
+        <div key={l} style={{ textAlign:"center", background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"8px 10px", minWidth:52 }}>
+          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:28, color: color || "var(--gold)", lineHeight:1 }}>{String(v).padStart(2,"0")}</div>
+          <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{l}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Phase-aware countdown for the Home page:
+// 1) before kickoff → countdown to group deadline
+// 2) tournament running, knockout closed → countdown to knockout opening
+// 3) knockout window open → countdown to knockout deadline
+// 4) everything locked
+function Countdown({ shared }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick(x => x + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
-  if (!cd) return (
+  const now = new Date();
+
+  // Phase 1 — group predictions open
+  if (now < FIRST_MATCH_UTC) {
+    const urgency = (FIRST_MATCH_UTC - now) < 24*60*60*1000;
+    return (
+      <div style={{ background: urgency ? "rgba(224,85,85,0.1)" : "var(--gold-pale)", border:`1px solid ${urgency ? "rgba(224,85,85,0.3)" : "var(--gold-bd)"}`, borderRadius:12, padding:"14px 16px" }}>
+        <p style={{ fontSize:11, fontWeight:700, color: urgency ? "#E05555" : "var(--gold)", marginBottom:10, letterSpacing:"1px", textTransform:"uppercase" }}>
+          ⏱ {urgency ? "⚠️ Less than 24h left!" : "Group predictions close at kickoff"}
+        </p>
+        <p style={{ fontSize:10, color:"var(--muted)", marginBottom:10 }}>Mexico vs South Africa · Thu 11 Jun · 23:00 Dubai</p>
+        <CountdownChips target={FIRST_MATCH_UTC} color={urgency ? "#E05555" : "var(--gold)"} />
+      </div>
+    );
+  }
+
+  // Phase 2 — tournament running, knockout predictions not yet open
+  if (!isKnockoutOpen(shared)) {
+    return (
+      <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:12, padding:"14px 16px" }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--gold)", marginBottom:6, letterSpacing:"1px", textTransform:"uppercase" }}>⚔️ Knockout predictions open in</p>
+        <p style={{ fontSize:10, color:"var(--muted)", marginBottom:10 }}>Group picks are locked · knockout opens after the group stage</p>
+        <CountdownChips target={KNOCKOUT_OPEN_UTC} />
+        <p style={{ fontSize:10, color:"var(--muted)", marginTop:10, textAlign:"center" }}>Then predict until the first R32 kickoff · Sun 28 Jun · 23:00 Dubai</p>
+      </div>
+    );
+  }
+
+  // Phase 3 — knockout window open
+  if (!isKnockoutLocked()) {
+    return (
+      <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.3)", borderRadius:12, padding:"14px 16px" }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"#E05555", marginBottom:6, letterSpacing:"1px", textTransform:"uppercase" }}>⚔️ Knockout window is open!</p>
+        <p style={{ fontSize:10, color:"var(--muted)", marginBottom:10 }}>Fill in your knockout bracket before the first R32 kickoff · Sun 28 Jun · 23:00 Dubai</p>
+        <CountdownChips target={KNOCKOUT_DEADLINE_UTC} color="#E05555" />
+      </div>
+    );
+  }
+
+  // Phase 4 — all locked
+  return (
     <div style={{ background:"rgba(224,85,85,0.12)", border:"1px solid rgba(224,85,85,0.3)", borderRadius:12, padding:"12px 16px", textAlign:"center" }}>
-      <p style={{ fontSize:13, fontWeight:700, color:"#E05555" }}>🔒 Predictions are now locked — the tournament has started!</p>
+      <p style={{ fontSize:13, fontWeight:700, color:"#E05555" }}>🔒 All predictions are locked — enjoy the knockout stage!</p>
     </div>
   );
+}
 
-  const { days, hours, minutes, seconds } = cd;
-  const urgency = cd.diff < 24*60*60*1000;
+// ─── KNOCKOUT LOCKED PANEL ───────────────────────────────────────────────────
+// Shown on the Knockout tab while the knockout prediction window is closed.
 
+function KnockoutLockedPanel({ shared, myPreds }) {
+  const koPicked = shared.knockoutMatches.filter(m => {
+    const p = myPreds[m.id];
+    return p && (p.homeTeam || p.awayTeam || String(p.homeGoals ?? "") !== "");
+  }).length;
   return (
-    <div style={{ background: urgency ? "rgba(224,85,85,0.1)" : "var(--gold-pale)", border:`1px solid ${urgency ? "rgba(224,85,85,0.3)" : "var(--gold-bd)"}`, borderRadius:12, padding:"14px 16px" }}>
-      <p style={{ fontSize:11, fontWeight:700, color: urgency ? "#E05555" : "var(--gold)", marginBottom:10, letterSpacing:"1px", textTransform:"uppercase" }}>
-        ⏱ {urgency ? "⚠️ Less than 24h left!" : "Predictions close at kickoff"}
+    <div style={{ textAlign:"center", padding:"28px 8px 8px" }}>
+      <div style={{ fontSize:48, marginBottom:10 }}>🔒</div>
+      <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, color:"var(--gold)", marginBottom:8, letterSpacing:1 }}>Knockout opens after the group stage</p>
+      <p style={{ fontSize:13, color:"var(--muted)", lineHeight:1.65, marginBottom:18, padding:"0 8px" }}>
+        Once all group matches are played, the real bracket is known — then you'll predict the knockout rounds with the actual qualified teams.
       </p>
-      <p style={{ fontSize:10, color:"var(--muted)", marginBottom:10 }}>Mexico vs South Africa · Thu 11 Jun · 23:00 Dubai</p>
-      <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
-        {[["days",days],["hrs",hours],["min",minutes],["sec",seconds]].map(([l,v]) => (
-          <div key={l} style={{ textAlign:"center", background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"8px 10px", minWidth:52 }}>
-            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:28, color: urgency ? "#E05555" : "var(--gold)", lineHeight:1 }}>{String(v).padStart(2,"0")}</div>
-            <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{l}</div>
+      <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:14, padding:"16px 14px", marginBottom:14 }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--gold)", letterSpacing:"1px", textTransform:"uppercase", marginBottom:10 }}>⚔️ Opens in</p>
+        <CountdownChips target={KNOCKOUT_OPEN_UTC} />
+        <p style={{ fontSize:10, color:"var(--muted)", marginTop:10 }}>Deadline: Sun 28 Jun · 23:00 Dubai — first Round of 32 kickoff</p>
+      </div>
+      {koPicked > 0 && (
+        <p style={{ fontSize:12, color:"var(--ok)", lineHeight:1.6 }}>
+          ✓ Your {koPicked} earlier knockout picks are safely saved — you can review and update them here once the window opens.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── GROUP COMPLETE SPLASH ───────────────────────────────────────────────────
+// Fires once per dad (per device) when the 72nd group prediction is filled in.
+
+function GroupCompleteSplash({ me, shared, onClose }) {
+  const koOpen = isKnockoutOpen(shared);
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:5000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ position:"absolute", inset:0, background:"rgba(1,16,40,0.92)" }} onClick={onClose}/>
+      <Confetti active />
+      <div style={{ position:"relative", background:"linear-gradient(180deg,#012148,#011028)", border:"2px solid var(--gold)", borderRadius:20, padding:"28px 22px", maxWidth:420, width:"100%", textAlign:"center", boxShadow:"0 0 40px rgba(232,184,75,0.25)" }}>
+        <div style={{ fontSize:54, marginBottom:8 }}>🎉</div>
+        <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:30, color:"var(--gold)", marginBottom:6, letterSpacing:1 }}>Group Stage Complete!</p>
+        <p style={{ fontSize:13, color:"var(--muted)", marginBottom:18, lineHeight:1.6 }}>
+          All 72 group predictions are in, {me.name}! 💪 Your picks lock at kickoff on <strong style={{ color:"var(--text)" }}>Thu 11 Jun, 23:00</strong> Dubai.
+        </p>
+        <div style={{ background:"rgba(232,184,75,0.07)", border:"1px solid var(--gold-bd)", borderRadius:12, padding:"14px 14px", marginBottom:14 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:"var(--gold)", letterSpacing:"1px", textTransform:"uppercase", marginBottom:10 }}>
+            ⚔️ {koOpen ? "Knockout predictions are open!" : "Knockout predictions open in"}
+          </p>
+          {!koOpen && <CountdownChips target={KNOCKOUT_OPEN_UTC} />}
+          <p style={{ fontSize:11, color:"var(--muted)", marginTop:10, lineHeight:1.6 }}>
+            Once the group stage is finished, you'll predict the knockout bracket with the real qualified teams. The window closes at the first Round of 32 kickoff: <strong style={{ color:"var(--text)" }}>Sun 28 Jun, 23:00</strong> Dubai.
+          </p>
+        </div>
+        <p style={{ fontSize:11, color:"var(--muted)", marginBottom:16, lineHeight:1.5 }}>
+          Any knockout picks you've already made are safely saved.
+        </p>
+        <button className="btn btn-gold" style={{ width:"100%" }} onClick={onClose}>Got it — see you at the knockout! ⚽</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── PHASE ANNOUNCEMENT POPUP ────────────────────────────────────────────────
+// One-time popup on first visit explaining the new two-phase prediction setup.
+
+function PhaseAnnouncementPopup({ onClose }) {
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:6000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ position:"absolute", inset:0, background:"rgba(1,16,40,0.92)" }} onClick={onClose}/>
+      <div style={{ position:"relative", background:"linear-gradient(180deg,#012148,#011028)", border:"2px solid var(--gold)", borderRadius:20, padding:"26px 22px", maxWidth:420, width:"100%", boxShadow:"0 0 40px rgba(232,184,75,0.25)" }}>
+        <div style={{ textAlign:"center", marginBottom:14 }}>
+          <div style={{ fontSize:44, marginBottom:6 }}>📢</div>
+          <p style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, color:"var(--gold)", letterSpacing:1 }}>Predictions in two rounds!</p>
+        </div>
+        <p style={{ fontSize:13, color:"var(--muted)", lineHeight:1.65, marginBottom:14 }}>
+          We've split the pool into two phases — so you don't have to guess the whole knockout bracket blind:
+        </p>
+        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
+          <div style={{ background:"rgba(232,184,75,0.07)", border:"1px solid var(--gold-bd)", borderRadius:12, padding:"12px 14px" }}>
+            <p style={{ fontSize:12, fontWeight:700, color:"var(--gold)", marginBottom:4 }}>1️⃣ Group stage — now</p>
+            <p style={{ fontSize:12, color:"var(--muted)", lineHeight:1.55 }}>Predict all 72 group matches before kickoff: <strong style={{ color:"var(--text)" }}>Thu 11 Jun, 23:00</strong> Dubai.</p>
           </div>
-        ))}
+          <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid var(--bd)", borderRadius:12, padding:"12px 14px" }}>
+            <p style={{ fontSize:12, fontWeight:700, color:"var(--gold)", marginBottom:4 }}>2️⃣ Knockout — after the groups</p>
+            <p style={{ fontSize:12, color:"var(--muted)", lineHeight:1.55 }}>Opens <strong style={{ color:"var(--text)" }}>Sun 28 Jun, 10:00</strong> Dubai, once the real bracket is known. Deadline: <strong style={{ color:"var(--text)" }}>23:00</strong> that evening — first Round of 32 kickoff.</p>
+          </div>
+        </div>
+        <p style={{ fontSize:11, color:"var(--ok)", lineHeight:1.55, marginBottom:16, textAlign:"center" }}>
+          ✓ Already filled in knockout picks? They're safely saved — you can review and update them when the window opens.
+        </p>
+        <button className="btn btn-gold" style={{ width:"100%" }} onClick={onClose}>Let's go — fill in my group picks! ⚽</button>
       </div>
     </div>
   );
@@ -106,7 +247,7 @@ function HomeView({ shared, leaderboard, completedMatches, totalMatches, me, set
         <p style={{ color:"var(--muted)", fontSize:11, marginTop:4 }}>A friendly prediction game for the SRI Dads community</p>
       </div>
       <div style={{ padding:"18px 16px", display:"flex", flexDirection:"column", gap:14 }}>
-        <Countdown />
+        <Countdown shared={shared} />
 
         {!me ? (
           <div className="card-gold" style={{ padding:20, textAlign:"center" }}>
@@ -304,10 +445,26 @@ function JoinView({ shared, persist, loginAs, setView }) {
 
 // ─── PREDICT ─────────────────────────────────────────────────────────────────
 
-function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup, activeStage, setActiveStage, setView }) {
+function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup, activeStage, setActiveStage, setView, showToast }) {
   const [confetti, setConfetti] = useState(false);
   const touchStartX = useRef(null);
   const groupKeys = Object.keys(GROUPS_2026);
+
+  // Group-complete splash: fires once per dad (per device) when all 72 group preds are in
+  const [showGroupSplash, setShowGroupSplash] = useState(false);
+  useEffect(() => {
+    if (!me) return;
+    const myP = shared.predictions[me.id] || {};
+    const allFilled = shared.matches.length > 0 && shared.matches.every(m => {
+      const p = myP[m.id];
+      if (!p) return false;
+      return String(p.homeGoals ?? "") !== "" && String(p.awayGoals ?? "") !== "";
+    });
+    if (!allFilled) return;
+    try {
+      if (!localStorage.getItem(`sri_groupSplash_${me.id}`)) setShowGroupSplash(true);
+    } catch {}
+  }, [shared, me]);
 
   if (!me) return (
     <div>
@@ -322,6 +479,15 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   );
 
   const myPreds = shared.predictions[me.id] || {};
+
+  // Knockout window state
+  const koOpen = isKnockoutOpen(shared);
+  const koLocked = isKnockoutLocked();
+
+  function dismissSplash() {
+    setShowGroupSplash(false);
+    try { localStorage.setItem(`sri_groupSplash_${me.id}`, "1"); } catch {}
+  }
 
   // Robust check: 0 is a valid score, empty string and undefined/null are not
   function isPredFilled(p) {
@@ -402,6 +568,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   return (
     <div>
       <Confetti active={confetti} />
+      {showGroupSplash && <GroupCompleteSplash me={me} shared={shared} onClose={dismissSplash} />}
       {/* Compact sticky header */}
       <div style={{ padding:"10px 16px 0", background:"var(--navy)", position:"sticky", top:56, zIndex:100, borderBottom:"1px solid var(--bd)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -486,15 +653,30 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
             </div>
             {/* Last group — show Continue to Knockout */}
             {activeGroup === groupKeys[groupKeys.length - 1] && (
-              <button className="btn btn-gold" style={{ width:"100%", marginTop:12, fontSize:15 }}
-                onClick={() => setActiveStage("knockout")}>
-                Continue to Knockout Predictions →
-              </button>
+              koOpen ? (
+                <button className="btn btn-gold" style={{ width:"100%", marginTop:12, fontSize:15 }}
+                  onClick={() => setActiveStage("knockout")}>
+                  Continue to Knockout Predictions →
+                </button>
+              ) : (
+                <button className="btn btn-ghost" style={{ width:"100%", marginTop:12, fontSize:14 }}
+                  onClick={() => setActiveStage("knockout")}>
+                  🔒 Knockout opens after the group stage — see when →
+                </button>
+              )
             )}
           </div>
         )}
-        {activeStage === "knockout" && (
+        {activeStage === "knockout" && !koOpen && (
+          <KnockoutLockedPanel shared={shared} myPreds={myPreds} />
+        )}
+        {activeStage === "knockout" && koOpen && (
           <div>
+            {koLocked && (
+              <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
+                <p style={{ fontSize:12, color:"#E05555", fontWeight:600 }}>🔒 Knockout predictions are locked — the Round of 32 has kicked off!</p>
+              </div>
+            )}
             <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
               <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>💡 Tap each dropdown to select a team. ✨ = auto-suggested from your group predictions — tap to confirm!</p>
             </div>
@@ -505,7 +687,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                   {shared.knockoutMatches.filter(m => m.stage === stage).map(m => {
                     const pred = myPreds[m.id] || {};
                     const pts = m.result ? calcPts(pred, m.result, stage) : null;
-                    const locked = !!m.result;
+                    const locked = !!m.result || koLocked;
                     const eligible = getEligibleTeams(m.id);
                     const sug = suggested[m.id] || {};
                     // Teams already picked in OTHER matches of the SAME stage — can't be picked twice
@@ -541,7 +723,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                               <span>{FLAGS[m.home]}</span><span style={{ fontWeight:600, fontSize:13 }}>{m.home}</span>
                             </div>
                           ) : (
-                            <select className="inp" value={homeVal} style={{ borderColor: pred.homeTeam ? "var(--ok)" : homeIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setHomeTeam(e.target.value)}>
+                            <select className="inp" value={homeVal} disabled={koLocked} style={{ borderColor: pred.homeTeam ? "var(--ok)" : homeIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setHomeTeam(e.target.value)}>
                               <option value="">{homeIsAuto ? `👆 Tap to pick — suggested: ${sug.home}` : "👆 Tap to select team..."}</option>
                               {homeIsAuto && <option value={sug.home}>✨ {sug.home} (suggested)</option>}
                               {homeOpts.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
@@ -586,7 +768,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                               <span>{FLAGS[m.away]}</span><span style={{ fontWeight:600, fontSize:13 }}>{m.away}</span>
                             </div>
                           ) : (
-                            <select className="inp" value={awayVal} style={{ borderColor: pred.awayTeam ? "var(--ok)" : awayIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setAwayTeam(e.target.value)}>
+                            <select className="inp" value={awayVal} disabled={koLocked} style={{ borderColor: pred.awayTeam ? "var(--ok)" : awayIsAuto ? "var(--gold-bd)" : "var(--bd)" }} onChange={e => setAwayTeam(e.target.value)}>
                               <option value="">{awayIsAuto ? `👆 Tap to pick — suggested: ${sug.away}` : "👆 Tap to select team..."}</option>
                               {awayIsAuto && <option value={sug.away}>✨ {sug.away} (suggested)</option>}
                               {awayOpts.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
@@ -601,7 +783,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
             ))}
             <div className="card-gold" style={{ padding:16, marginTop:4 }}>
               <p style={{ fontWeight:700, marginBottom:8, fontSize:14, color:"#fff" }}>🏆 Who will be World Champion?</p>
-              <select className="inp" value={shared.champions[me.id] || ""} onChange={e => persist(s => ({ ...s, champions: { ...s.champions, [me.id]: e.target.value } }))}>
+              <select className="inp" disabled={koLocked} value={shared.champions[me.id] || ""} onChange={e => persist(s => ({ ...s, champions: { ...s.champions, [me.id]: e.target.value } }))}>
                 <option value="">Select a country...</option>
                 {ALL_TEAMS.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
               </select>
@@ -1301,6 +1483,31 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
           </div>
         </div>
         <div style={{ marginBottom:14 }}>
+          <p className="lbl" style={{ marginBottom:8 }}>Knockout phase</p>
+          <div className="card" style={{ padding:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10 }}>
+              <div style={{ flex:1 }}>
+                <p style={{ fontWeight:600, fontSize:13, marginBottom:2 }}>
+                  {isKnockoutOpen(shared) ? "🟢 Open for predictions" : "🔒 Locked for predictions"}
+                </p>
+                <p style={{ fontSize:11, color:"var(--muted)", lineHeight:1.5 }}>
+                  Auto-opens Sun 28 Jun · 10:00 Dubai. Deadline: Sun 28 Jun · 23:00 Dubai (first R32 kickoff). Use the override to open earlier.
+                </p>
+              </div>
+              <button
+                className={shared.knockoutOpen ? "btn btn-ghost btn-sm" : "btn btn-gold btn-sm"}
+                style={{ flexShrink:0 }}
+                onClick={() => {
+                  const turningOn = !shared.knockoutOpen;
+                  persist(s => ({ ...s, knockoutOpen: !s.knockoutOpen }));
+                  showToast(turningOn ? "Knockout opened for everyone ⚔️" : "Manual override off — back to schedule");
+                }}>
+                {shared.knockoutOpen ? "Disable override" : "Open now"}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style={{ marginBottom:14 }}>
           <p className="lbl" style={{ marginBottom:8 }}>Statistics</p>
           <div className="card" style={{ padding:14 }}>
             {[["Participants", shared.participants.length],["Group matches", shared.matches.length],["Results entered", completedMatches],["Total predictions", totalPreds]].map(([l, v]) => (
@@ -1330,6 +1537,21 @@ export default function App() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [toast, setToast] = useState(null);
   const isAdminUrl = window.location.hash === "#admin";
+
+  // One-time announcement about the two-phase prediction setup
+  const [showAnnounce, setShowAnnounce] = useState(false);
+  useEffect(() => {
+    if (loading) return;
+    // Only relevant until the knockout deadline has passed
+    if (new Date() >= KNOCKOUT_DEADLINE_UTC) return;
+    try {
+      if (!localStorage.getItem("sri_phaseAnnounce_v1")) setShowAnnounce(true);
+    } catch {}
+  }, [loading]);
+  function dismissAnnounce() {
+    setShowAnnounce(false);
+    try { localStorage.setItem("sri_phaseAnnounce_v1", "1"); } catch {}
+  }
 
   useEffect(() => {
     (async () => {
@@ -1516,6 +1738,7 @@ export default function App() {
     <div className="app">
       <style>{CSS}</style>
       <TopBar saving={saving} syncStatus={syncStatus} lastSync={lastSync} />
+      {showAnnounce && <PhaseAnnouncementPopup onClose={dismissAnnounce} />}
       {resultFlash && <div style={{ position:"fixed", inset:0, background:"rgba(61,170,110,0.15)", pointerEvents:"none", zIndex:500, animation:"flashFade .8s ease forwards" }}><style>{`@keyframes flashFade{0%{opacity:1}100%{opacity:0}}`}</style></div>}
       {view === "home"        && <HomeView {...sp} leaderboard={leaderboard} completedMatches={completedMatches} totalMatches={totalMatches} />}
       {view === "join"        && <JoinView {...sp} loginAs={loginAs} />}
