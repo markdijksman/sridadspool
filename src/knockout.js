@@ -526,20 +526,42 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
   };
 }
 
-// = 2026-06-11T19:00:00Z
-export const FIRST_MATCH_UTC = new Date("2026-06-11T19:00:00Z");
+// ─── PHASE TIMING ─────────────────────────────────────────────────────────────
+// Phase 1: group predictions — open until first match kickoff
+// Phase 2: tournament running, knockout predictions locked
+// Phase 3: knockout window — opens after the last group matches,
+//          closes at the first Round of 32 kickoff
+// Phase 4: everything locked
+
+export const FIRST_MATCH_UTC = new Date("2026-06-11T19:00:00Z");        // Thu 11 Jun · 23:00 Dubai
+export const KNOCKOUT_OPEN_UTC = new Date("2026-06-28T06:00:00Z");      // Sun 28 Jun · 10:00 Dubai (after last group matches)
+export const KNOCKOUT_DEADLINE_UTC = new Date("2026-06-28T19:00:00Z");  // Sun 28 Jun · 23:00 Dubai (first R32 kickoff)
 
 export function isPredictionLocked() {
   return new Date() >= FIRST_MATCH_UTC;
 }
 
-export function getCountdown() {
+// Knockout window open? Admin can override via the knockoutOpen flag in pool state.
+export function isKnockoutOpen(shared) {
+  if (shared && shared.knockoutOpen === true) return true; // admin override
+  return new Date() >= KNOCKOUT_OPEN_UTC;
+}
+
+export function isKnockoutLocked() {
+  return new Date() >= KNOCKOUT_DEADLINE_UTC;
+}
+
+export function getCountdownTo(target) {
   const now = new Date();
-  const diff = FIRST_MATCH_UTC - now;
+  const diff = target - now;
   if (diff <= 0) return null;
   const days    = Math.floor(diff / (1000*60*60*24));
   const hours   = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
   const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
   const seconds = Math.floor((diff % (1000*60)) / 1000);
   return { days, hours, minutes, seconds, diff };
+}
+
+export function getCountdown() {
+  return getCountdownTo(FIRST_MATCH_UTC);
 }
