@@ -375,6 +375,19 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
     });
   }
 
+  // For knockout matches: when entering a score, also commit any showing suggestion
+  // so the suggested teams become permanent (otherwise they recompute and disappear)
+  function commitScore(matchId, hg, ag, pred, sug) {
+    persist(s => {
+      const existingPred = (s.predictions[me.id] || {})[matchId] || {};
+      const newPred = { ...existingPred, homeGoals: hg, awayGoals: ag };
+      // Commit suggested teams only if user hasn't already picked them
+      if (!newPred.homeTeam && sug?.home) newPred.homeTeam = sug.home;
+      if (!newPred.awayTeam && sug?.away) newPred.awayTeam = sug.away;
+      return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: newPred } } };
+    });
+  }
+
   function handleTouchStart(e) { touchStartX.current = e.touches[0].clientX; }
   function handleTouchEnd(e) {
     if (touchStartX.current === null) return;
@@ -539,12 +552,12 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                           <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
                             className={`sbox ${pred.homeGoals !== undefined && pred.homeGoals !== "" ? "filled" : ""}`}
                             value={pred.homeGoals ?? ""} disabled={locked}
-                            onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); updatePred(m.id, v, pred.awayGoals ?? ""); }} />
+                            onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); commitScore(m.id, v, pred.awayGoals ?? "", pred, sug); }} />
                           <span style={{ color:"var(--muted)", fontWeight:700, fontSize:16 }}>–</span>
                           <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2}
                             className={`sbox ${pred.awayGoals !== undefined && pred.awayGoals !== "" ? "filled" : ""}`}
                             value={pred.awayGoals ?? ""} disabled={locked}
-                            onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); updatePred(m.id, pred.homeGoals ?? "", v); }} />
+                            onChange={e => { const v = e.target.value.replace(/[^0-9]/g,""); commitScore(m.id, pred.homeGoals ?? "", v, pred, sug); }} />
                           {pts !== null && <Pts pts={pts} />}
                           {m.result && <span style={{ fontSize:11, color:"var(--muted)" }}>{m.result.homeGoals}–{m.result.awayGoals}</span>}
                         </div>
