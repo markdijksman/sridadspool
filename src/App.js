@@ -1577,6 +1577,11 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'ok' | 'error'
 
   useEffect(() => {
+    // Only the admin browser (#admin) talks to the WC API — every other
+    // visitor receives results via the 30s Supabase poll. This keeps API
+    // usage within the daily request limit regardless of visitor count.
+    if (!isAdminUrl) return;
+
     let timeoutId;
 
     async function syncScores() {
