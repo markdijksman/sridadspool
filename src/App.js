@@ -524,13 +524,17 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
 
   function updatePred(matchId, hg, ag) {
     const isGroupMatch = shared.matches.find(m => m.id === matchId);
+    if (isGroupMatch && isGroupMatchLocked(isGroupMatch, shared)) {
+      showToast("🔒 This match has kicked off — predictions are locked");
+      return;
+    }
     if (isGroupMatch && hasKnockoutPreds) {
       showToast("⚠️ Group changed — check your Knockout predictions!");
     }
     persist(s => {
       const existingPred = (s.predictions[me.id] || {})[matchId] || {};
       // IMPORTANT: merge with existing pred to preserve homeTeam/awayTeam
-      const newPred = { ...existingPred, homeGoals: hg, awayGoals: ag };
+      const newPred = { ...existingPred, homeGoals: hg, awayGoals: ag, t: Date.now() };
       const newState = { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id] || {}), [matchId]: newPred } } };
       const match = [...s.matches, ...s.knockoutMatches].find(m => m.id === matchId);
       if (match?.result) {
@@ -546,7 +550,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   function commitScore(matchId, hg, ag, pred, sug) {
     persist(s => {
       const existingPred = (s.predictions[me.id] || {})[matchId] || {};
-      const newPred = { ...existingPred, homeGoals: hg, awayGoals: ag };
+      const newPred = { ...existingPred, homeGoals: hg, awayGoals: ag, t: Date.now() };
       // Commit suggested teams only if user hasn't already picked them
       if (!newPred.homeTeam && sug?.home) newPred.homeTeam = sug.home;
       if (!newPred.awayTeam && sug?.away) newPred.awayTeam = sug.away;
