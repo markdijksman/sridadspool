@@ -1,5 +1,16 @@
 // ─── WC2026 API SCORE SYNC ────────────────────────────────────────────────────
-// Fetches official results from api.wc2026api.com and merges them into the pool
+// Fetches official results from api.wc2026api.com and merges them into the pool.
+//
+// v2 changes:
+// - ONE API call per sync cycle (was 2): fetches all matches, derives
+//   completed + live locally. Halves request usage.
+// - Robust score extraction: handles nested score objects AND flat
+//   home_score/away_score fields.
+// - Robust completed/live detection via status OR phase (FT, FT_PEN, 1H, ...).
+// - Team-name matching: extended map (Irak, Congo DR, ...) + diacritic-
+//   insensitive fallback comparison.
+// - Removed hardcoded Resend email key (security: client code is public!).
+//   Rate-limit warnings surface via the in-app toast (getRateLimitInfo).
 
 const WC_API_KEY = process.env.REACT_APP_WC_API_KEY;
 const WC_API_BASE = "https://api.wc2026api.com";
@@ -8,54 +19,80 @@ const WC_API_BASE = "https://api.wc2026api.com";
 const TEAM_NAME_MAP = {
   "Czech Republic": "Czechia",
   "USA": "United States",
+  "United States of America": "United States",
   "South Korea": "Korea Republic",
+  "Korea": "Korea Republic",
   "Turkey": "Türkiye",
-  "Ivory Coast": "Ivory Coast",
-  "DR Congo": "DR Congo",
+  "Turkiye": "Türkiye",
   "Bosnia": "Bosnia and Herzegovina",
   "Bosnia-Herzegovina": "Bosnia and Herzegovina",
-  "Cape Verde": "Cape Verde",
+  "Bosnia Herzegovina": "Bosnia and Herzegovina",
   "Curacao": "Curaçao",
+  "Irak": "Iraq",
+  "Congo DR": "DR Congo",
+  "DR Congo": "DR Congo",
+  "Congo-Kinshasa": "DR Congo",
+  "Cote d'Ivoire": "Ivory Coast",
+  "Côte d'Ivoire": "Ivory Coast",
 };
 
 function normalise(name) {
+  if (!name) return name;
   return TEAM_NAME_MAP[name] || name;
 }
 
-// Send email alert via Resend
-async function sendRateLimitAlert(remaining, total) {
-  try {
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer re_4qDhwDx3_9DLMBF6mEZbRPXVV3gwUQwsz",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: "SRI Dads Pool <onboarding@resend.dev>",
-        to: ["markdijksman@me.com"],
-        subject: `⚠️ SRI Dads Pool — API limit at ${Math.round(((total-remaining)/total)*100)}%`,
-        html: `
-          <h2>⚠️ WC2026 API Rate Limit Warning</h2>
-          <p>The score sync API is approaching its daily limit.</p>
-          <p><strong>Remaining: ${remaining} / ${total} requests</strong></p>
-          <p>Used: ${Math.round(((total-remaining)/total)*100)}%</p>
-          <p>Scores will stop auto-updating if the limit is reached. It resets at midnight UTC.</p>
-          <p style="color:#888;font-size:12px">— SRI Dads World Cup Pool 2026</p>
-        `
-      })
-    });
-    console.log("Rate limit alert email sent");
-  } catch (e) {
-    console.error("Failed to send rate limit email:", e);
-  }
+// Diacritic-insensitive, case-insensitive comparison as a safety net
+// (e.g. "Curacao" vs "Curaçao", "Turkiye" vs "Türkiye")
+function canon(name) {
+  return String(name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
-// Track if we already sent alert today to avoid spam
-let _alertSentToday = false;
-let _alertSentDate = null;
+function sameTeam(a, b) {
+  return canon(a) === canon(b);
+}
 
-// Rate limit tracker
+// ── Status / phase detection ─────────────────────────────────────────────────
+
+const COMPLETED_STATUSES = new Set(["completed", "finished", "ft", "full_time", "full-time", "ended", "final"]);
+const COMPLETED_PHASES = new Set(["FT", "FT_PEN"]);
+const LIVE_PHASES = new Set(["1H", "HT", "2H", "ET1", "ET2", "PEN"]);
+const LIVE_STATUSES = new Set(["live", "in_play", "in-play", "playing", "started"]);
+
+function isCompleted(m) {
+  if (m.phase && COMPLETED_PHASES.has(String(m.phase).toUpperCase())) return true;
+  if (m.status && COMPLETED_STATUSES.has(String(m.status).toLowerCase())) return true;
+  return false;
+}
+
+function isLive(m) {
+  if (m.phase && LIVE_PHASES.has(String(m.phase).toUpperCase())) return true;
+  if (m.status && LIVE_STATUSES.has(String(m.status).toLowerCase())) return true;
+  return false;
+}
+
+// Extract goals from any plausible shape:
+//   { score: { home, away } }   { result: {...} }   { ft: [h, a] }
+//   { home_score, away_score }  { score_home, score_away }  { home_goals, ... }
+function extractScore(m) {
+  const sc = m.score || m.result || m.ft || null;
+  let hg, ag;
+  if (sc && typeof sc === "object") {
+    hg = sc.home ?? sc.home_score ?? sc.homeGoals ?? sc[0];
+    ag = sc.away ?? sc.away_score ?? sc.awayGoals ?? sc[1];
+  }
+  if (hg === undefined || hg === null) hg = m.home_score ?? m.score_home ?? m.home_goals ?? m.homeGoals;
+  if (ag === undefined || ag === null) ag = m.away_score ?? m.score_away ?? m.away_goals ?? m.awayGoals;
+  if (hg === undefined || hg === null || ag === undefined || ag === null) return null;
+  if (isNaN(parseInt(hg)) || isNaN(parseInt(ag))) return null;
+  return { homeGoals: String(parseInt(hg)), awayGoals: String(parseInt(ag)) };
+}
+
+// ── Rate limit tracking ──────────────────────────────────────────────────────
+
 let _rateLimitRemaining = null;
 let _rateLimitTotal = null;
 
@@ -63,57 +100,64 @@ export function getRateLimitInfo() {
   return { remaining: _rateLimitRemaining, total: _rateLimitTotal };
 }
 
-// Fetch all completed matches from the WC2026 API
-export async function fetchCompletedMatches() {
+// ── Fetching ─────────────────────────────────────────────────────────────────
+// One real HTTP request per cycle, shared between fetchCompletedMatches and
+// fetchLiveMatches via a short-lived cache (App.js calls both back-to-back).
+
+let _cache = { at: 0, matches: null };
+const CACHE_MS = 60_000;
+
+async function fetchAllMatches() {
   if (!WC_API_KEY) {
-    console.warn("No WC API key set — skipping auto-sync");
-    return [];
+    console.warn("No WC API key set (REACT_APP_WC_API_KEY) — skipping auto-sync");
+    return null;
   }
+  const now = Date.now();
+  if (_cache.matches && now - _cache.at < CACHE_MS) return _cache.matches;
+
+  const res = await fetch(`${WC_API_BASE}/matches`, {
+    headers: { Authorization: `Bearer ${WC_API_KEY}` },
+  });
+
+  // Track rate limit headers
+  const remaining = res.headers.get("X-RateLimit-Remaining") || res.headers.get("x-ratelimit-remaining");
+  const total = res.headers.get("X-RateLimit-Limit") || res.headers.get("x-ratelimit-limit");
+  if (remaining !== null) _rateLimitRemaining = parseInt(remaining);
+  if (total !== null) _rateLimitTotal = parseInt(total);
+
+  if (!res.ok) throw new Error(`WC API error: ${res.status}`);
+  const data = await res.json();
+  const matches = Array.isArray(data) ? data : (data.matches || data.data || []);
+  _cache = { at: now, matches };
+  return matches;
+}
+
+// Fetch all completed matches (kept API-compatible with App.js)
+export async function fetchCompletedMatches() {
   try {
-    const res = await fetch(`${WC_API_BASE}/matches?status=completed`, {
-      headers: { Authorization: `Bearer ${WC_API_KEY}` },
-    });
-    // Track rate limit headers
-    const remaining = res.headers.get("X-RateLimit-Remaining") || res.headers.get("x-ratelimit-remaining");
-    const total = res.headers.get("X-RateLimit-Limit") || res.headers.get("x-ratelimit-limit");
-    if (remaining !== null) _rateLimitRemaining = parseInt(remaining);
-    if (total !== null) _rateLimitTotal = parseInt(total);
-
-    // Send email alert at 75% usage — once per day
-    if (_rateLimitRemaining !== null && _rateLimitTotal !== null) {
-      const today = new Date().toDateString();
-      const usedPct = ((_rateLimitTotal - _rateLimitRemaining) / _rateLimitTotal) * 100;
-      if (usedPct >= 75 && (!_alertSentToday || _alertSentDate !== today)) {
-        _alertSentToday = true;
-        _alertSentDate = today;
-        sendRateLimitAlert(_rateLimitRemaining, _rateLimitTotal);
-      }
-    }
-
-    if (!res.ok) throw new Error(`WC API error: ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data.matches || data.data || []);
+    const all = await fetchAllMatches();
+    if (!all) return [];
+    return all.filter(m => isCompleted(m) && extractScore(m));
   } catch (e) {
     console.error("WC API fetch failed:", e);
     return [];
   }
 }
 
-// Fetch live/in-progress matches
+// Fetch live/in-progress matches (served from the same cached response)
 export async function fetchLiveMatches() {
-  if (!WC_API_KEY) return [];
   try {
-    const res = await fetch(`${WC_API_BASE}/matches?status=live`, {
-      headers: { Authorization: `Bearer ${WC_API_KEY}` },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data.matches || data.data || []);
-  } catch { return []; }
+    const all = await fetchAllMatches();
+    if (!all) return [];
+    return all.filter(m => isLive(m));
+  } catch {
+    return [];
+  }
 }
 
-// Merge API results into our pool state
-// Returns updated state (or same state if nothing changed)
+// ── Merging ──────────────────────────────────────────────────────────────────
+// Merge API results into our pool state.
+// Returns { state, changed } — same state object if nothing changed.
 export function mergeApiResults(currentState, apiMatches) {
   if (!apiMatches || apiMatches.length === 0) return { state: currentState, changed: false };
 
@@ -121,31 +165,27 @@ export function mergeApiResults(currentState, apiMatches) {
   let newMatches = [...currentState.matches];
 
   apiMatches.forEach(apiMatch => {
-    // Only process matches with a final score
-    const score = apiMatch.score || apiMatch.result || apiMatch.ft;
-    if (!score) return;
+    // Only completed matches produce a final result
+    if (!isCompleted(apiMatch)) return;
 
-    const homeGoals = score.home ?? score[0] ?? score.home_score;
-    const awayGoals = score.away ?? score[1] ?? score.away_score;
-    if (homeGoals === undefined || homeGoals === null) return;
-    if (awayGoals === undefined || awayGoals === null) return;
+    const score = extractScore(apiMatch);
+    if (!score) return;
 
     const apiHome = normalise(apiMatch.home_team || apiMatch.team1 || apiMatch.home);
     const apiAway = normalise(apiMatch.away_team || apiMatch.team2 || apiMatch.away);
+    if (!apiHome || !apiAway) return;
 
-    // Find matching match in our state
+    // Find matching match in our state (diacritic-insensitive)
     const idx = newMatches.findIndex(m =>
-      m.home === apiHome && m.away === apiAway
+      sameTeam(m.home, apiHome) && sameTeam(m.away, apiAway)
     );
-
-    if (idx === -1) return; // no match found
+    if (idx === -1) {
+      console.warn(`⚠️ No pool match found for API result: ${apiHome} vs ${apiAway}`);
+      return;
+    }
 
     const existing = newMatches[idx].result;
-    const newResult = {
-      homeGoals: String(homeGoals),
-      awayGoals: String(awayGoals),
-      autoUpdated: true,
-    };
+    const newResult = { ...score, autoUpdated: true };
 
     // Only update if result changed or not set
     if (!existing ||
@@ -155,7 +195,7 @@ export function mergeApiResults(currentState, apiMatches) {
         i === idx ? { ...m, result: newResult } : m
       );
       changed = true;
-      console.log(`✅ Score synced: ${apiHome} ${homeGoals}–${awayGoals} ${apiAway}`);
+      console.log(`✅ Score synced: ${apiHome} ${newResult.homeGoals}–${newResult.awayGoals} ${apiAway}`);
     }
   });
 
@@ -165,7 +205,7 @@ export function mergeApiResults(currentState, apiMatches) {
   };
 }
 
-// Poll interval: 5 min normally, 1 min if there's a live match
+// Poll interval: 10 min normally, 3 min if there's a live match
 export function getPollInterval(liveMatches) {
-  return liveMatches.length > 0 ? 60_000 : 5 * 60_000;
+  return liveMatches.length > 0 ? 3 * 60_000 : 10 * 60_000;
 }
