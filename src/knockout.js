@@ -565,3 +565,37 @@ export function getCountdownTo(target) {
 export function getCountdown() {
   return getCountdownTo(FIRST_MATCH_UTC);
 }
+
+// ─── PER-MATCH LOCKING (late entry support) ──────────────────────────────────
+// Normally all group predictions lock at the first kickoff. When the admin
+// enables lateEntryOpen in the pool state, individual matches stay editable
+// until their own kickoff (or until a result is entered) — so late joiners
+// can still fill in everything that hasn't been played yet.
+
+const MONTHS = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5, Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+
+// Parse "Thu 11 Jun" + "23:00" (Dubai time, UTC+4) → Date in UTC
+export function getMatchKickoffUTC(m) {
+  try {
+    const dm = String(m.date || "").match(/(\d{1,2})\s+([A-Za-z]{3})/);
+    const tm = String(m.time || "").match(/(\d{1,2}):(\d{2})/);
+    if (!dm || !tm) return null;
+    const day = parseInt(dm[1]);
+    const month = MONTHS[dm[2]];
+    if (month === undefined) return null;
+    const hh = parseInt(tm[1]), mm = parseInt(tm[2]);
+    // Dubai = UTC+4, no DST
+    return new Date(Date.UTC(2026, month, day, hh - 4, mm, 0));
+  } catch {
+    return null;
+  }
+}
+
+// Is this specific group match locked for prediction edits?
+export function isGroupMatchLocked(m, shared) {
+  if (m.result) return true;                       // played → always locked
+  const ko = getMatchKickoffUTC(m);
+  if (ko && new Date() >= ko) return true;         // kicked off → always locked
+  if (!isPredictionLocked()) return false;         // before tournament → open
+  return !(shared && shared.lateEntryOpen === true); // after first kickoff: only open during late entry
+}
