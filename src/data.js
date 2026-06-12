@@ -96,8 +96,8 @@ export function generateGroupMatches() {
     { id:44, group:"H", home:"Saudi Arabia",        away:"Uruguay",               date:"Mon 16 Jun", time:"05:00", venue:"MetLife Stadium, New Jersey", result:null },
     { id:45, group:"H", home:"Cape Verde",          away:"Uruguay",               date:"Sun 21 Jun", time:"19:00", venue:"AT&T Stadium, Dallas", result:null },
     { id:46, group:"H", home:"Spain",               away:"Saudi Arabia",          date:"Mon 22 Jun", time:"05:00", venue:"Lincoln Financial Field, Philadelphia", result:null },
-    { id:47, group:"H", home:"Cape Verde",          away:"Spain",                 date:"Fri 27 Jun", time:"05:00", venue:"Hard Rock Stadium, Miami", result:null },
-    { id:48, group:"H", home:"Uruguay",             away:"Saudi Arabia",          date:"Fri 27 Jun", time:"05:00", venue:"MetLife Stadium, New Jersey", result:null },
+    { id:47, group:"H", home:"Cape Verde", away:"Saudi Arabia", date:"Sat 27 Jun", time:"04:00", venue:"NRG Stadium, Houston", result:null },
+    { id:48, group:"H", home:"Uruguay", away:"Spain", date:"Sat 27 Jun", time:"04:00", venue:"Estadio Akron, Guadalajara", result:null },
     // GROUP I
     { id:49, group:"I", home:"France",              away:"Senegal",               date:"Mon 16 Jun", time:"23:00", venue:"Levi's Stadium, San Francisco", result:null },
     { id:50, group:"I", home:"Iraq",                away:"Norway",                date:"Tue 17 Jun", time:"02:00", venue:"Gillette Stadium, Boston", result:null },
