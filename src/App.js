@@ -6,7 +6,7 @@ import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox, SriDadsLogo
 } from './components';
 import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval, getRateLimitInfo } from './scoreSync';
-import { getEligibleTeams, getCountdownTo, isPredictionLocked, FIRST_MATCH_UTC, KNOCKOUT_OPEN_UTC, KNOCKOUT_DEADLINE_UTC, isKnockoutOpen, isKnockoutLocked, inferKnockoutBracket } from './knockout';
+import { getEligibleTeams, getCountdownTo, isPredictionLocked, isGroupMatchLocked, FIRST_MATCH_UTC, KNOCKOUT_OPEN_UTC, KNOCKOUT_DEADLINE_UTC, isKnockoutOpen, isKnockoutLocked, inferKnockoutBracket } from './knockout';
 
 // ─── CONFETTI ─────────────────────────────────────────────────────────────────
 
@@ -588,9 +588,14 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
       <div style={{ padding:"10px 16px 0" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {activeStage === "group" && (
           <div>
-            {isPredictionLocked() && (
+            {isPredictionLocked() && !shared.lateEntryOpen && (
               <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
                 <p style={{ fontSize:12, color:"#E05555", fontWeight:600 }}>🔒 Group stage predictions are locked — the tournament has started!</p>
+              </div>
+            )}
+            {isPredictionLocked() && shared.lateEntryOpen && (
+              <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
+                <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>⏳ Late entry window is open — you can still predict matches that haven't kicked off yet. Played matches stay locked.</p>
               </div>
             )}
             {/* Single scrollable row of group tabs */}
@@ -628,7 +633,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
               <span style={{ fontSize:10, color:"var(--muted)" }}>← swipe →</span>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={isPredictionLocked() ? null : updatePred} showResult />)}
+              {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={isGroupMatchLocked(m, shared) ? null : updatePred} showResult />)}
             </div>
 
             {/* Next / Prev group navigation */}
@@ -1480,6 +1485,31 @@ function AdminView({ shared, persist, adminUnlocked, setAdminUnlocked, completed
                 </div>
               ))
             }
+          </div>
+        </div>
+        <div style={{ marginBottom:14 }}>
+          <p className="lbl" style={{ marginBottom:8 }}>Late entry</p>
+          <div className="card" style={{ padding:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10 }}>
+              <div style={{ flex:1 }}>
+                <p style={{ fontWeight:600, fontSize:13, marginBottom:2 }}>
+                  {shared.lateEntryOpen ? "🟢 Open — unplayed matches predictable" : "🔒 Closed — group stage fully locked"}
+                </p>
+                <p style={{ fontSize:11, color:"var(--muted)", lineHeight:1.5 }}>
+                  Lets latecomers predict matches that haven't kicked off yet. Played matches stay locked (0 pts). Turn off when the latecomers are done.
+                </p>
+              </div>
+              <button
+                className={shared.lateEntryOpen ? "btn btn-ghost btn-sm" : "btn btn-gold btn-sm"}
+                style={{ flexShrink:0 }}
+                onClick={() => {
+                  const turningOn = !shared.lateEntryOpen;
+                  persist(s => ({ ...s, lateEntryOpen: !s.lateEntryOpen }));
+                  showToast(turningOn ? "Late entry opened ⏳" : "Late entry closed — all locked again");
+                }}>
+                {shared.lateEntryOpen ? "Close" : "Open"}
+              </button>
+            </div>
           </div>
         </div>
         <div style={{ marginBottom:14 }}>
