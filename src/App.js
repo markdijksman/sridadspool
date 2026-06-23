@@ -5,7 +5,6 @@ import { CSS } from './styles';
 import {
   TopBar, PageFooter, MatchRow, AdminMatchRow, PinGate, Pbar, TeamBadge, Pts, LegalBox, SriDadsLogo
 } from './components';
-import { fetchCompletedMatches, fetchLiveMatches, mergeApiResults, getPollInterval, getRateLimitInfo } from './scoreSync';
 import { getEligibleTeams, getCountdownTo, isPredictionLocked, isGroupMatchLocked, FIRST_MATCH_UTC, KNOCKOUT_OPEN_UTC, KNOCKOUT_DEADLINE_UTC, isKnockoutOpen, isKnockoutLocked, inferKnockoutBracket } from './knockout';
 
 // ─── CONFETTI ─────────────────────────────────────────────────────────────────
@@ -484,6 +483,18 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
   const koOpen = isKnockoutOpen(shared);
   const koLocked = isKnockoutLocked();
 
+  // Restricted late entry: when shared.openMatchIds has entries, ONLY those
+  // group matches can be filled in (until their own kickoff). Every other match
+  // stays locked, regardless of the global Late entry toggle. Each open match
+  // still auto-locks at its kickoff (played matches always stay locked).
+  const restrictedOpen = (shared.openMatchIds || []).length > 0;
+  function effectiveGroupLocked(m) {
+    if (restrictedOpen) {
+      return isGroupMatchLocked(m, { ...shared, lateEntryOpen: shared.openMatchIds.includes(m.id) });
+    }
+    return isGroupMatchLocked(m, shared);
+  }
+
   function dismissSplash() {
     setShowGroupSplash(false);
     try { localStorage.setItem(`sri_groupSplash_${me.id}`, "1"); } catch {}
@@ -524,7 +535,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
 
   function updatePred(matchId, hg, ag) {
     const isGroupMatch = shared.matches.find(m => m.id === matchId);
-    if (isGroupMatch && isGroupMatchLocked(isGroupMatch, shared)) {
+    if (isGroupMatch && effectiveGroupLocked(isGroupMatch)) {
       showToast("🔒 This match has kicked off — predictions are locked");
       return;
     }
@@ -592,14 +603,16 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
       <div style={{ padding:"10px 16px 0" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {activeStage === "group" && (
           <div>
-            {isPredictionLocked() && !shared.lateEntryOpen && (
+            {isPredictionLocked() && !shared.lateEntryOpen && !restrictedOpen && (
               <div style={{ background:"rgba(224,85,85,0.1)", border:"1px solid rgba(224,85,85,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
                 <p style={{ fontSize:12, color:"#E05555", fontWeight:600 }}>🔒 Group stage predictions are locked — the tournament has started!</p>
               </div>
             )}
-            {isPredictionLocked() && shared.lateEntryOpen && (
+            {isPredictionLocked() && (shared.lateEntryOpen || restrictedOpen) && (
               <div style={{ background:"var(--gold-pale)", border:"1px solid var(--gold-bd)", borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
-                <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>⏳ Late entry window is open — you can still predict matches that haven't kicked off yet. Played matches stay locked.</p>
+                <p style={{ fontSize:12, color:"var(--gold)", fontWeight:600 }}>{restrictedOpen && !shared.lateEntryOpen
+                  ? "⏳ Late entry is open for selected matches only — fill those in before kickoff. All other matches stay locked."
+                  : "⏳ Late entry window is open — you can still predict matches that haven't kicked off yet. Played matches stay locked."}</p>
               </div>
             )}
             {/* Single scrollable row of group tabs */}
@@ -637,7 +650,7 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
               <span style={{ fontSize:10, color:"var(--muted)" }}>← swipe →</span>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={isGroupMatchLocked(m, shared) ? null : updatePred} showResult />)}
+              {groupMatches.map(m => <MatchRow key={m.id} match={m} myPred={myPreds[m.id]} onUpdate={effectiveGroupLocked(m) ? null : updatePred} showResult />)}
             </div>
 
             {/* Next / Prev group navigation */}
@@ -1593,78 +1606,27 @@ export default function App() {
       setShared(data && data.matches ? data : INITIAL_POOL);
       setLoading(false);
       try {
-        const s = JSON.parse(sessionStorage.getItem("sri_me") || "null");
+        const s = JSON.parse(localStorage.getItem("sri_me") || "null");
         if (s) setMe(s);
       } catch {}
     })();
   }, []);
 
+  // Scores worden nu server-side gesynct (api/sync-scores.js, getriggerd door
+  // de GitHub Actions cron) en in Supabase gezet. Deze poll haalt elke 30s de
+  // laatste gedeelde state op — inclusief vers gesyncte uitslagen.
+  const [lastSync, setLastSync] = useState(null);
+  const [syncStatus] = useState(null); // behouden voor TopBar-compatibiliteit
+
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!saving) { const data = await loadPool(); if (data && data.matches) setShared(data); }
+      if (!saving) {
+        const data = await loadPool();
+        if (data && data.matches) { setShared(data); setLastSync(new Date()); }
+      }
     }, 30000);
     return () => clearInterval(interval);
   }, [saving]);
-
-  // ── Auto-sync scores from WC2026 API ──────────────────────────────────────
-  const [lastSync, setLastSync] = useState(null);
-  const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'ok' | 'error'
-
-  useEffect(() => {
-    // Only the admin browser (#admin) talks to the WC API — every other
-    // visitor receives results via the 30s Supabase poll. This keeps API
-    // usage within the daily request limit regardless of visitor count.
-    if (!isAdminUrl) return;
-
-    let timeoutId;
-
-    async function syncScores() {
-      setSyncStatus('syncing');
-      try {
-        const [completed, live] = await Promise.all([
-          fetchCompletedMatches(),
-          fetchLiveMatches(),
-        ]);
-
-        const allApiMatches = [...completed, ...live];
-
-        if (allApiMatches.length > 0) {
-          setShared(prev => {
-            if (!prev) return prev;
-            const { state, changed } = mergeApiResults(prev, allApiMatches);
-            if (changed) {
-              savePool(state);
-              setLastSync(new Date());
-            }
-            return state;
-          });
-        }
-        setSyncStatus('ok');
-        setLastSync(new Date());
-
-        // Check rate limit — warn at 75% usage
-        const { remaining, total } = getRateLimitInfo();
-        if (remaining !== null && total !== null) {
-          const usedPct = ((total - remaining) / total) * 100;
-          if (usedPct >= 75 && usedPct < 100) {
-            showToast(`⚠️ API limit: ${remaining}/${total} requests left today`);
-          } else if (remaining === 0) {
-            showToast("🚫 API daily limit reached — scores won't auto-update until tomorrow");
-          }
-        }
-
-        const interval = getPollInterval(live);
-        timeoutId = setTimeout(syncScores, interval);
-      } catch (e) {
-        setSyncStatus('error');
-        timeoutId = setTimeout(syncScores, 5 * 60_000);
-      }
-    }
-
-    // Start syncing after initial load
-    timeoutId = setTimeout(syncScores, 3000);
-    return () => clearTimeout(timeoutId);
-  }, []);
 
   const persist = useCallback(async (updater) => {
     setSaving(true);
@@ -1680,14 +1642,14 @@ export default function App() {
     setMe(p);
     setActiveGroup("A");
     setActiveStage("group");
-    try { sessionStorage.setItem("sri_me", JSON.stringify(p)); } catch {}
+    try { localStorage.setItem("sri_me", JSON.stringify(p)); } catch {}
     showToast(`Welcome, ${p.name}! ⚽`);
     setView("predict");
   }
   function logout() {
     if (!window.confirm("Are you sure you want to log out? Your predictions are saved.")) return;
     setMe(null);
-    try { sessionStorage.removeItem("sri_me"); } catch {}
+    try { localStorage.removeItem("sri_me"); } catch {}
     setView("home");
   }
 
@@ -1747,7 +1709,7 @@ export default function App() {
 
   async function handleRefreshLeaderboard() {
     const data = await loadPool();
-    if (data && data.matches) setShared(data);
+    if (data && data.matches) { setShared(data); setLastSync(new Date()); }
   }
 
   if (loading) return (
