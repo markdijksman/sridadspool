@@ -203,6 +203,34 @@ export const R32_BRACKET = [
   { id:"r32_16", label:"Match 88 · 2D vs 2G",         home: G.D, away: G.G },
 ];
 
+// ─── OFFICIAL CONFIRMED ROUND OF 32 ──────────────────────────────────────────
+// Once the group stage is over, the real R32 matchups are known. We surface
+// these as the suggestion for each R32 slot instead of recomputing from group
+// standings — recomputation can disagree with FIFA on tiebreakers and the
+// best-8 third-place selection, so using the confirmed pairings guarantees the
+// bracket shown matches reality exactly. These are SUGGESTIONS only: a user's
+// own picks are never overwritten automatically.
+// Slot ids map to match numbers: r32_1 = M73 … r32_16 = M88.
+// Team names use the exact pool spelling (see GROUPS_2026 in data.js).
+export const R32_REAL = {
+  r32_1:  { home: "South Africa",  away: "Canada" },                  // M73 · 2A vs 2B
+  r32_2:  { home: "Germany",       away: "Paraguay" },                // M74 · 1E vs best 3rd
+  r32_3:  { home: "Netherlands",   away: "Morocco" },                 // M75 · 1F vs 2C
+  r32_4:  { home: "Brazil",        away: "Japan" },                   // M76 · 1C vs 2F
+  r32_5:  { home: "France",        away: "Sweden" },                  // M77 · 1I vs best 3rd
+  r32_6:  { home: "Ivory Coast",   away: "Norway" },                  // M78 · 2E vs 2I
+  r32_7:  { home: "Mexico",        away: "Ecuador" },                 // M79 · 1A vs best 3rd
+  r32_8:  { home: "England",       away: "DR Congo" },                // M80 · 1L vs best 3rd
+  r32_9:  { home: "United States", away: "Bosnia and Herzegovina" },  // M81 · 1D vs best 3rd
+  r32_10: { home: "Belgium",       away: "Senegal" },                 // M82 · 1G vs best 3rd
+  r32_11: { home: "Portugal",      away: "Croatia" },                 // M83 · 2K vs 2L
+  r32_12: { home: "Spain",         away: "Austria" },                 // M84 · 1H vs 2J
+  r32_13: { home: "Switzerland",   away: "Algeria" },                 // M85 · 1B vs best 3rd
+  r32_14: { home: "Argentina",     away: "Cape Verde" },              // M86 · 1J vs 2H
+  r32_15: { home: "Colombia",      away: "Ghana" },                   // M87 · 1K vs best 3rd
+  r32_16: { home: "Australia",     away: "Egypt" },                   // M88 · 2D vs 2G
+};
+
 // Round of 16 — winners of R32 pairs
 export const R16_BRACKET = [
   { id:"r16_1", label:"R16 M1 · W73 vs W74",   homeR32:"r32_1",  awayR32:"r32_2"  },
@@ -432,9 +460,16 @@ export function inferKnockoutBracket(groupMatches, knockoutPreds, userGroupPreds
     return grp3rd ? (thirdStats[grp3rd]?.team || null) : null;
   }
 
-  // 2b. Infer R32 teams
+  // 2b. R32 teams — use the OFFICIAL confirmed Round of 32 (R32_REAL) as the
+  // suggestion so it always matches FIFA exactly, regardless of how group
+  // standings would recompute. Falls back to inference only for any slot not
+  // present in R32_REAL (e.g. before the bracket is confirmed).
   const r32Inferred = {};
   Object.keys(R32_HOME_SLOT).forEach(id => {
+    if (R32_REAL[id]) {
+      r32Inferred[id] = { home: R32_REAL[id].home, away: R32_REAL[id].away };
+      return;
+    }
     const homeSlot = R32_HOME_SLOT[id];
     const awaySlot = R32_AWAY_SLOT[id];
     r32Inferred[id] = {
