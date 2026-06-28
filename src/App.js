@@ -725,10 +725,13 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                     const awayVal = pred.awayTeam || "";
                     const homeIsAuto = !pred.homeTeam && !!sug.home && !usedInStage.has(sug.home);
                     const awayIsAuto = !pred.awayTeam && !!sug.away && !usedInStage.has(sug.away);
+                    // Mismatch: user already picked a team, but the confirmed result is a different one
+                    const homeMismatch = !!pred.homeTeam && !!sug.home && pred.homeTeam !== sug.home;
+                    const awayMismatch = !!pred.awayTeam && !!sug.away && pred.awayTeam !== sug.away;
                     // Home options: eligible minus teams used elsewhere this stage minus the away pick of this match
-                    // But always keep the current pick visible
-                    const homeOpts = eligible.filter(t => (t === homeVal) || (!usedInStage.has(t) && t !== awayVal));
-                    const awayOpts = eligible.filter(t => (t === awayVal) || (!usedInStage.has(t) && t !== homeVal));
+                    // But always keep the current pick visible, and the suggested team when it differs (so it's pickable)
+                    const homeOpts = eligible.filter(t => (t === homeVal) || (homeMismatch && t === sug.home) || (!usedInStage.has(t) && t !== awayVal));
+                    const awayOpts = eligible.filter(t => (t === awayVal) || (awayMismatch && t === sug.away) || (!usedInStage.has(t) && t !== homeVal));
                     function setHomeTeam(val) { persist(s => { const cur = (s.predictions[me.id]||{})[m.id]||{}; return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...cur, homeTeam: val } } } }; }); }
                     function setAwayTeam(val) { persist(s => { const cur = (s.predictions[me.id]||{})[m.id]||{}; return { ...s, predictions: { ...s.predictions, [me.id]: { ...(s.predictions[me.id]||{}), [m.id]: { ...cur, awayTeam: val } } } }; }); }
                     return (
@@ -750,6 +753,9 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                               {homeIsAuto && <option value={sug.home}>✨ {sug.home} (suggested)</option>}
                               {homeOpts.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
+                          )}
+                          {homeMismatch && !locked && (
+                            <p style={{ fontSize:9, color:"var(--gold)", marginTop:4 }}>✋ This slot is now <strong>{FLAGS[sug.home]} {sug.home}</strong> — pick it in the dropdown, or keep your own.</p>
                           )}
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
@@ -795,6 +801,9 @@ function PredictView({ shared, me, persist, logout, activeGroup, setActiveGroup,
                               {awayIsAuto && <option value={sug.away}>✨ {sug.away} (suggested)</option>}
                               {awayOpts.map(t => <option key={t} value={t}>{FLAGS[t]} {t}</option>)}
                             </select>
+                          )}
+                          {awayMismatch && !locked && (
+                            <p style={{ fontSize:9, color:"var(--gold)", marginTop:4 }}>✋ This slot is now <strong>{FLAGS[sug.away]} {sug.away}</strong> — pick it in the dropdown, or keep your own.</p>
                           )}
                         </div>
                       </div>
