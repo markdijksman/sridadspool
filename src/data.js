@@ -148,26 +148,26 @@ export const KNOCKOUT_TEMPLATE = [
   { id:"r32_14", stage:"Round of 32", label:"M86 · 1J vs 2H",       home:"1st Group J", away:"2nd Group H", result:null },
   { id:"r32_15", stage:"Round of 32", label:"M87 · 1K vs best 3rd", home:"1st Group K", away:"Best 3rd placed team", result:null },
   { id:"r32_16", stage:"Round of 32", label:"M88 · 2D vs 2G",       home:"2nd Group D", away:"2nd Group G", result:null },
-  // Round of 16
-  { id:"r16_1", stage:"Round of 16", label:"W r32_1 vs W r32_2", home:"W Match 1", away:"W Match 2", result:null },
-  { id:"r16_2", stage:"Round of 16", label:"W r32_3 vs W r32_4", home:"W Match 3", away:"W Match 4", result:null },
-  { id:"r16_3", stage:"Round of 16", label:"W r32_5 vs W r32_6", home:"W Match 5", away:"W Match 6", result:null },
-  { id:"r16_4", stage:"Round of 16", label:"W r32_7 vs W r32_8", home:"W Match 7", away:"W Match 8", result:null },
-  { id:"r16_5", stage:"Round of 16", label:"W r32_9 vs W r32_10", home:"W Match 9",  away:"W Match 10", result:null },
-  { id:"r16_6", stage:"Round of 16", label:"W r32_11 vs W r32_12", home:"W Match 11", away:"W Match 12", result:null },
-  { id:"r16_7", stage:"Round of 16", label:"W r32_13 vs W r32_14", home:"W Match 13", away:"W Match 14", result:null },
-  { id:"r16_8", stage:"Round of 16", label:"W r32_15 vs W r32_16", home:"W Match 15", away:"W Match 16", result:null },
-  // Quarter-finals
-  { id:"qf_1", stage:"Quarter-final", label:"W R16 M1 vs W R16 M2", home:"W R16 Match 1", away:"W R16 Match 2", result:null },
-  { id:"qf_2", stage:"Quarter-final", label:"W R16 M3 vs W R16 M4", home:"W R16 Match 3", away:"W R16 Match 4", result:null },
-  { id:"qf_3", stage:"Quarter-final", label:"W R16 M5 vs W R16 M6", home:"W R16 Match 5", away:"W R16 Match 6", result:null },
-  { id:"qf_4", stage:"Quarter-final", label:"W R16 M7 vs W R16 M8", home:"W R16 Match 7", away:"W R16 Match 8", result:null },
-  // Semi-finals
-  { id:"sf_1", stage:"Semi-final", label:"W QF1 vs W QF2", home:"W Quarter-final 1", away:"W Quarter-final 2", result:null },
-  { id:"sf_2", stage:"Semi-final", label:"W QF3 vs W QF4", home:"W Quarter-final 3", away:"W Quarter-final 4", result:null },
+  // Round of 16 (official bracket M89–M96)
+  { id:"r16_1", stage:"Round of 16", label:"M89 · W74 vs W77", home:"W M74", away:"W M77", result:null },
+  { id:"r16_2", stage:"Round of 16", label:"M90 · W73 vs W75", home:"W M73", away:"W M75", result:null },
+  { id:"r16_3", stage:"Round of 16", label:"M91 · W76 vs W78", home:"W M76", away:"W M78", result:null },
+  { id:"r16_4", stage:"Round of 16", label:"M92 · W79 vs W80", home:"W M79", away:"W M80", result:null },
+  { id:"r16_5", stage:"Round of 16", label:"M93 · W83 vs W84", home:"W M83",  away:"W M84", result:null },
+  { id:"r16_6", stage:"Round of 16", label:"M94 · W81 vs W82", home:"W M81", away:"W M82", result:null },
+  { id:"r16_7", stage:"Round of 16", label:"M95 · W86 vs W88", home:"W M86", away:"W M88", result:null },
+  { id:"r16_8", stage:"Round of 16", label:"M96 · W85 vs W87", home:"W M85", away:"W M87", result:null },
+  // Quarter-finals (M97–M100)
+  { id:"qf_1", stage:"Quarter-final", label:"M97 · W89 vs W90",  home:"W M89", away:"W M90", result:null },
+  { id:"qf_2", stage:"Quarter-final", label:"M98 · W93 vs W94",  home:"W M93", away:"W M94", result:null },
+  { id:"qf_3", stage:"Quarter-final", label:"M99 · W91 vs W92",  home:"W M91", away:"W M92", result:null },
+  { id:"qf_4", stage:"Quarter-final", label:"M100 · W95 vs W96", home:"W M95", away:"W M96", result:null },
+  // Semi-finals (M101–M102)
+  { id:"sf_1", stage:"Semi-final", label:"M101 · W97 vs W98",  home:"W M97", away:"W M98", result:null },
+  { id:"sf_2", stage:"Semi-final", label:"M102 · W99 vs W100", home:"W M99", away:"W M100", result:null },
   // Bronze & Final
-  { id:"bronze", stage:"Bronze Final", label:"3rd place match", home:"Loser SF1", away:"Loser SF2", result:null },
-  { id:"final",  stage:"Final",        label:"World Cup Final",  home:"Winner SF1", away:"Winner SF2", result:null },
+  { id:"bronze", stage:"Bronze Final", label:"M103 · 3rd place match", home:"Loser SF1", away:"Loser SF2", result:null },
+  { id:"final",  stage:"Final",        label:"M104 · World Cup Final",  home:"Winner SF1", away:"Winner SF2", result:null },
 ];
 
 export const INITIAL_POOL = {
