@@ -231,28 +231,32 @@ export const R32_REAL = {
   r32_16: { home: "Australia",     away: "Egypt" },                   // M88 · 2D vs 2G
 };
 
-// Round of 16 — winners of R32 pairs
+// Round of 16 — winners of R32 pairs (OFFICIAL FIFA bracket, M89–M96)
+// slot ids: r16_1=M89 … r16_8=M96
 export const R16_BRACKET = [
-  { id:"r16_1", label:"R16 M1 · W73 vs W74",   homeR32:"r32_1",  awayR32:"r32_2"  },
-  { id:"r16_2", label:"R16 M2 · W75 vs W76",   homeR32:"r32_3",  awayR32:"r32_4"  },
-  { id:"r16_3", label:"R16 M3 · W77 vs W78",   homeR32:"r32_5",  awayR32:"r32_6"  },
-  { id:"r16_4", label:"R16 M4 · W79 vs W80",   homeR32:"r32_7",  awayR32:"r32_8"  },
-  { id:"r16_5", label:"R16 M5 · W81 vs W82",   homeR32:"r32_9",  awayR32:"r32_10" },
-  { id:"r16_6", label:"R16 M6 · W83 vs W84",   homeR32:"r32_11", awayR32:"r32_12" },
-  { id:"r16_7", label:"R16 M7 · W85 vs W86",   homeR32:"r32_13", awayR32:"r32_14" },
-  { id:"r16_8", label:"R16 M8 · W87 vs W88",   homeR32:"r32_15", awayR32:"r32_16" },
+  { id:"r16_1", label:"M89 · W74 vs W77", homeR32:"r32_2",  awayR32:"r32_5"  },
+  { id:"r16_2", label:"M90 · W73 vs W75", homeR32:"r32_1",  awayR32:"r32_3"  },
+  { id:"r16_3", label:"M91 · W76 vs W78", homeR32:"r32_4",  awayR32:"r32_6"  },
+  { id:"r16_4", label:"M92 · W79 vs W80", homeR32:"r32_7",  awayR32:"r32_8"  },
+  { id:"r16_5", label:"M93 · W83 vs W84", homeR32:"r32_11", awayR32:"r32_12" },
+  { id:"r16_6", label:"M94 · W81 vs W82", homeR32:"r32_9",  awayR32:"r32_10" },
+  { id:"r16_7", label:"M95 · W86 vs W88", homeR32:"r32_14", awayR32:"r32_16" },
+  { id:"r16_8", label:"M96 · W85 vs W87", homeR32:"r32_13", awayR32:"r32_15" },
 ];
 
+// Quarter-finals (OFFICIAL bracket, M97–M100)
+// M97=W89vW90 (left top), M98=W93vW94 (left bottom),
+// M99=W91vW92 (right top), M100=W95vW96 (right bottom)
 export const QF_BRACKET = [
-  { id:"qf_1", label:"QF1 · W R16M1 vs W R16M2", homeR16:"r16_1", awayR16:"r16_2" },
-  { id:"qf_2", label:"QF2 · W R16M3 vs W R16M4", homeR16:"r16_3", awayR16:"r16_4" },
-  { id:"qf_3", label:"QF3 · W R16M5 vs W R16M6", homeR16:"r16_5", awayR16:"r16_6" },
-  { id:"qf_4", label:"QF4 · W R16M7 vs W R16M8", homeR16:"r16_7", awayR16:"r16_8" },
+  { id:"qf_1", label:"M97 · W89 vs W90",  homeR16:"r16_1", awayR16:"r16_2" },
+  { id:"qf_2", label:"M98 · W93 vs W94",  homeR16:"r16_5", awayR16:"r16_6" },
+  { id:"qf_3", label:"M99 · W91 vs W92",  homeR16:"r16_3", awayR16:"r16_4" },
+  { id:"qf_4", label:"M100 · W95 vs W96", homeR16:"r16_7", awayR16:"r16_8" },
 ];
 
 export const SF_BRACKET = [
-  { id:"sf_1", label:"SF1 · W QF1 vs W QF2", homeQF:"qf_1", awayQF:"qf_2" },
-  { id:"sf_2", label:"SF2 · W QF3 vs W QF4", homeQF:"qf_3", awayQF:"qf_4" },
+  { id:"sf_1", label:"M101 · W97 vs W98",  homeQF:"qf_1", awayQF:"qf_2" },
+  { id:"sf_2", label:"M102 · W99 vs W100", homeQF:"qf_3", awayQF:"qf_4" },
 ];
 
 // Get eligible teams for a knockout slot based on which R32 matches feed into it
